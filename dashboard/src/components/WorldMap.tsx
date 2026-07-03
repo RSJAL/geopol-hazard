@@ -62,6 +62,8 @@ interface Bubble {
   hasBets: boolean;
   /** set when the bubble holds exactly one event (bets-mode mini cards) */
   soleEventId: string | null;
+  /** region-anchored leftovers of a region that split (no anchor country) */
+  isRemainder: boolean;
 }
 
 interface Transform {
@@ -153,9 +155,13 @@ export default function WorldMap({
 
   // ── 3-level bubble aggregation with density-based level skipping ───────────
   // An event's anchor chain is region → subregion (if its anchor country has
-  // one) → country; a bubble splits into the next level only when it holds
-  // more than SPLIT_MIN events, so sparse geographies stay merged (Fig 1).
+  // one) → country. At the middle zoom a region only splits when it holds
+  // enough events (keeps sparse geographies merged, Fig 1); at country zoom
+  // everything devolves fully to countries. Watch/bets scopes split
+  // immediately — a user's own handful of events should never stay merged.
   const { bubbles, anchorOf } = useMemo(() => {
+    const splitMin = filter === "all" ? SPLIT_MIN : 0;
+
     const chain = (ev: CatalogEvent) => {
       const cid = anchorCountry(ev, regionOfCountry);
       const sub = cid ? countryMeta.get(cid)?.subregion ?? null : null;
@@ -168,32 +174,20 @@ export default function WorldMap({
       regionCounts.set(ev.region, (regionCounts.get(ev.region) ?? 0) + 1);
     }
 
-    // level-1 anchor (subregion, or country when the region has no middle tier)
-    const l1Anchor = new Map<string, string>();
-    const l1Counts = new Map<string, number>();
-    for (const ev of visibleEvents) {
-      if (!ev.region) continue;
-      let a1 = ev.region;
-      if ((regionCounts.get(ev.region) ?? 0) > SPLIT_MIN) {
-        const { cid, sub } = chain(ev);
-        a1 = sub ?? cid ?? ev.region;
-      }
-      l1Anchor.set(ev.id, a1);
-      l1Counts.set(a1, (l1Counts.get(a1) ?? 0) + 1);
-    }
-
     const anchorOf = new Map<string, string>();
     const byAnchor = new Map<string, CatalogEvent[]>();
+    const splitRegions = new Set<string>();
     for (const ev of visibleEvents) {
       if (!ev.region) continue;
       let aid = ev.region;
       if (level >= 1) {
-        aid = l1Anchor.get(ev.id)!;
+        const { cid, sub } = chain(ev);
         if (level >= 2) {
-          const { cid, sub } = chain(ev);
-          if (cid && sub && aid === sub && (l1Counts.get(sub) ?? 0) > SPLIT_MIN)
-            aid = cid;
+          aid = cid ?? ev.region; // country view: always devolve fully
+        } else if ((regionCounts.get(ev.region) ?? 0) > splitMin) {
+          aid = sub ?? cid ?? ev.region;
         }
+        if (aid !== ev.region || level >= 2) splitRegions.add(ev.region);
       }
       anchorOf.set(ev.id, aid);
       (byAnchor.get(aid) ?? byAnchor.set(aid, []).get(aid)!).push(ev);
@@ -216,12 +210,13 @@ export default function WorldMap({
       if (!info) continue;
       const pt = projection([info.lon, info.lat]);
       if (!pt) continue;
+      const isRemainder = info.kind === "region" && splitRegions.has(aid);
       const volume = evs.reduce((s, e) => s + e.volume, 0);
       const base = info.kind === "region" ? 9 : info.kind === "sub" ? 8 : 7;
       const span = info.kind === "region" ? 26 : info.kind === "sub" ? 23 : 20;
       out.push({
         id: aid,
-        name: info.name,
+        name: isRemainder ? `${info.name} · other` : info.name,
         kind: info.kind,
         x: pt[0],
         y: pt[1],
@@ -231,10 +226,11 @@ export default function WorldMap({
         maxMove: Math.max(0, ...evs.flatMap((e) => e.markets.map((m) => Math.abs(m.change24h ?? 0)))),
         hasBets: evs.some((e) => betEventIds.has(e.id)),
         soleEventId: evs.length === 1 ? evs[0].id : null,
+        isRemainder,
       });
     }
     return { bubbles: out.sort((a, b) => b.r - a.r), anchorOf };
-  }, [visibleEvents, regions, subregions, countries, countryMeta, regionOfCountry, projection, level, betEventIds]);
+  }, [visibleEvents, regions, subregions, countries, countryMeta, regionOfCountry, projection, level, filter, betEventIds]);
 
   // ── focus/pan on selected event ─────────────────────────────────────────────
   const focusPoint = useMemo(() => {
@@ -359,9 +355,10 @@ export default function WorldMap({
           ))}
 
           {bubbles.map((b) => {
-            // sub/country bubbles filter with a namespaced prefix
-            const filterId =
-              b.kind === "region" ? b.id : b.kind === "sub" ? `sub:${b.id}` : `country:${b.id}`;
+            // sub/country/remainder bubbles filter with a namespaced prefix
+            const filterId = b.isRemainder
+              ? `rem:${b.id}`
+              : b.kind === "region" ? b.id : b.kind === "sub" ? `sub:${b.id}` : `country:${b.id}`;
             const active = selectedRegion === filterId;
             const hot = b.maxMove >= 0.05;
             const r = b.r * inv;
@@ -454,7 +451,9 @@ export default function WorldMap({
                 ? countries.find((c) => c.id === selectedRegion.slice(8))?.name ?? "filter"
                 : selectedRegion.startsWith("sub:")
                   ? subregions.find((s) => s.id === selectedRegion.slice(4))?.name ?? "filter"
-                  : regions.find((r) => r.id === selectedRegion)?.name ?? "filter"}
+                  : selectedRegion.startsWith("rem:")
+                    ? `${regions.find((r) => r.id === selectedRegion.slice(4))?.name ?? "region"} · other`
+                    : regions.find((r) => r.id === selectedRegion)?.name ?? "filter"}
             </button>
           )}
         </div>

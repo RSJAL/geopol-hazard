@@ -129,7 +129,7 @@ COUNTRIES = [
     ("TUR", "Turkey",        39.0,   35.0, "mena",     "levant",    r"\bturkey|türkiye|erdogan|ankara\b"),
     ("CHN", "China",         35.0,  105.0, "e_asia",   None,        r"\bchina|chinese|xi jinping|beijing\b"),
     ("PRK", "North Korea",   40.0,  127.0, "e_asia",   None,        r"\bnorth korea|kim jong|dprk|pyongyang\b"),
-    ("KOR", "South Korea",   36.5,  128.0, "e_asia",   None,        r"\bsouth korea|seoul\b"),
+    ("KOR", "South Korea",   36.5,  128.0, "e_asia",   None,        r"\bsouth korea|seoul|yoon\b"),
     ("JPN", "Japan",         36.5,  138.5, "e_asia",   None,        r"\bjapan|tokyo\b"),
     ("IND", "India",         22.0,   79.0, "s_asia",   None,        r"\bindia|modi|delhi\b"),
     ("PAK", "Pakistan",      30.0,   69.5, "mena",     "stans",     r"\bpakistan|islamabad\b"),

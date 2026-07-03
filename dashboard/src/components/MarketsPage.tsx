@@ -99,14 +99,13 @@ function AddToWatchlist({
 function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
   if (ev.type === "horizon") {
     const rows = buildLadder(ev, live);
-    const maxImpl = Math.max(...rows.map((r) => r.implDaily), 1e-9);
     return (
       <table className="ladder mini">
         <thead>
           <tr>
             <th>Deadline</th><th className="num">YES</th>
-            <th className="num" title="Implied daily odds: 1 − (1−P)^(1/days)">Daily</th>
-            <th className="viz"></th>
+            <th className="num">NO</th>
+            <th className="num">Volume</th>
           </tr>
         </thead>
         <tbody>
@@ -114,15 +113,8 @@ function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
             <tr key={r.endDate}>
               <td>{r.label}</td>
               <td className="num">{r.yes.toFixed(1)}%</td>
-              <td className={`num${r.isPeak ? " peak" : r.isInversion ? " inv" : ""}`}>
-                {r.implDaily.toFixed(3)}%
-              </td>
-              <td className="viz">
-                <div
-                  className={`bar${r.isPeak ? " bar-peak" : r.isInversion ? " bar-inv" : ""}`}
-                  style={{ width: `${Math.max(2, (r.implDaily / maxImpl) * 100)}%` }}
-                />
-              </td>
+              <td className="num muted">{(100 - r.yes).toFixed(1)}%</td>
+              <td className="num muted">{fmtVolume(r.market.volume)}</td>
             </tr>
           ))}
         </tbody>

@@ -62,6 +62,9 @@ export default function CatalogPanel({
       } else if (regionFilter?.startsWith("sub:")) {
         const cid = anchorCountry(e, regionOfCountry);
         if (!cid || subregionOfCountry.get(cid) !== regionFilter.slice(4)) return false;
+      } else if (regionFilter?.startsWith("rem:")) {
+        // region leftovers: events with no own-region anchor country
+        if (e.region !== regionFilter.slice(4) || anchorCountry(e, regionOfCountry)) return false;
       } else if (regionFilter && regionFilter !== "__global__" && e.region !== regionFilter) {
         return false;
       }
