@@ -9,7 +9,7 @@ function timeAgo(iso: string | null): string {
   return `${Math.round(mins / 1440)}d`;
 }
 
-export function sentimentBadge(s: number) {
+function sentimentBadge(s: number) {
   if (s <= -0.15) return <span className="sent sent-hot" title={`escalation score ${s}`}>🔥 hot</span>;
   if (s >= 0.15) return <span className="sent sent-cool" title={`escalation score ${s}`}>❄ cool</span>;
   return <span className="sent sent-neutral" title={`escalation score ${s}`}>· neutral</span>;

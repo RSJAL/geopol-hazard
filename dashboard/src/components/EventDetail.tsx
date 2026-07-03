@@ -31,9 +31,11 @@ function BetForm({
   const [shares, setShares] = useState("100");
   const [price, setPrice] = useState(yes.toFixed(1));
 
+  // reset only when the SIDE flips — a 60s live-price tick must not clobber
+  // an entry price the user is typing
   useEffect(() => {
     setPrice((side === "YES" ? yes : 100 - yes).toFixed(1));
-  }, [side, yes]);
+  }, [side]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nShares = parseFloat(shares) || 0;
   const nPrice = parseFloat(price) || 0;
@@ -139,7 +141,7 @@ function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
                 {`${r.label}: ${v.toFixed(3)}%/day` +
                   (mode === "marginal"
                     ? ` over ${r.windowDays}-day window (${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}% mass)`
-                    : ` (${r.yes.toFixed(1)}% ÷ ${r.days}d)`)}
+                    : ` (${r.yes.toFixed(1)}% compounded over ${r.days}d)`)}
               </title>
               <rect x={x - bw / 2} y={top} width={bw} height={Math.max(1.5, h)} className={cls} />
               <text x={x} y={CH - 3} className="tick tick-x">{r.label.replace(/^By /, "")}</text>
@@ -172,6 +174,9 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
     return ms.filter((m) => m.yesTokenId).slice(0, 6);
   }, [event, ladder]);
 
+  // key by market ids: the 60s live refresh rebuilds the ladder (new array
+  // identity) and must NOT refetch histories / flash the chart
+  const chartKey = chartMarkets.map((m) => m.id).join(",");
   useEffect(() => {
     let cancelled = false;
     setSeries(null);
@@ -191,7 +196,7 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
       }),
     ).then((s) => { if (!cancelled) setSeries(s); });
     return () => { cancelled = true; };
-  }, [chartMarkets, interval, event.type]);
+  }, [chartKey, interval, event.type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const peakMarg = Math.max(...ladder.slice(1).map((r) => r.margDaily), 0);
   const maxImpl = Math.max(...ladder.map((r) => r.implDaily), 1e-9);

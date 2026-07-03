@@ -158,10 +158,6 @@ export function fmtVolume(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
-export function fmtPct(v: number, digits = 1): string {
-  return `${v.toFixed(digits)}%`;
-}
-
 /**
  * Zoomed-in map anchor: the event's first country that belongs to its own
  * region, else null (event stays on the region bubble). Keeping anchors

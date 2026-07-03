@@ -6,6 +6,7 @@ import { loadWatchlist, persist } from "./lib/watchlist";
 import { betPnl, loadBets, persistBets } from "./lib/bets";
 import WorldMap, { type BetMapCard, type MapFilter } from "./components/WorldMap";
 import NewsFeed from "./components/NewsFeed";
+import { relatedArticles } from "./lib/news";
 import CatalogPanel from "./components/CatalogPanel";
 import EventDetail from "./components/EventDetail";
 import WatchlistPanel from "./components/WatchlistPanel";
@@ -114,9 +115,18 @@ export default function App() {
     const ids = new Set(watchlist);
     if (selectedId) ids.add(selectedId);
     for (const id of betEventIds) ids.add(id);
-    if (route.page === "event" && !route.id.startsWith("group:")) ids.add(route.id);
+    if (route.page === "event") {
+      if (route.id.startsWith("group:")) {
+        // merged cross-event page: refresh every member event
+        const key = route.id.slice(6);
+        for (const e of catalog?.events ?? [])
+          if (e.groupKey === key) ids.add(e.id);
+      } else {
+        ids.add(route.id);
+      }
+    }
     return [...ids];
-  }, [watchlist, selectedId, betEventIds, route]);
+  }, [watchlist, selectedId, betEventIds, route, catalog]);
   const targetsRef = useRef(liveTargets);
   targetsRef.current = liveTargets;
 
@@ -184,16 +194,13 @@ export default function App() {
   }, [bets, marketIndex, live]);
 
   /** 3 most relevant articles for the selected event (rail mini newsfeed) */
-  const railNews = useMemo(() => {
-    if (!news || !selected) return [];
-    const direct = news.articles.filter((a) => a.eventIds.includes(selected.id));
-    if (direct.length >= 3 || !selected.region) return direct.slice(0, 3);
-    const seen = new Set(direct.map((a) => a.id));
-    const regional = news.articles.filter(
-      (a) => !seen.has(a.id) && a.regions.includes(selected.region!),
-    );
-    return [...direct, ...regional].slice(0, 3);
-  }, [news, selected]);
+  const railNews = useMemo(
+    () =>
+      selected
+        ? relatedArticles(news, new Set([selected.id]), selected.region, 3).slice(0, 3)
+        : [],
+    [news, selected],
+  );
 
   if (error) {
     return (

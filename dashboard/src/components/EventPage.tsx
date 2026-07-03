@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Bet, Catalog, CatalogEvent, LivePriceMap, NewsData } from "../lib/types";
 import { buildGroups } from "../lib/grouping";
+import { relatedArticles } from "../lib/news";
 import EventDetail from "./EventDetail";
 import NewsFeed, { SentimentChart } from "./NewsFeed";
 
@@ -30,17 +31,10 @@ export default function EventPage({ id, catalog, live, news, onAddBet }: Props) 
     return { event: ev, memberIds: new Set(ev ? [ev.id] : []) };
   }, [id, catalog]);
 
-  const articles = useMemo(() => {
-    if (!news || !event) return [];
-    const direct = news.articles.filter((a) => a.eventIds.some((x) => memberIds.has(x)));
-    if (direct.length >= 5 || !event.region) return direct;
-    // thin direct coverage — pad with articles about the event's region
-    const seen = new Set(direct.map((a) => a.id));
-    const regional = news.articles.filter(
-      (a) => !seen.has(a.id) && a.regions.includes(event.region!),
-    );
-    return [...direct, ...regional];
-  }, [news, event, memberIds]);
+  const articles = useMemo(
+    () => (event ? relatedArticles(news, memberIds, event.region, 5) : []),
+    [news, event, memberIds],
+  );
 
   const dayArticles = useMemo(
     () =>
