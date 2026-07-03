@@ -46,6 +46,8 @@ export interface CountryInfo {
   name: string;
   lat: number;
   lon: number;
+  /** home region id — optional for old-schema catalog tolerance */
+  region?: string;
 }
 
 export interface Catalog {

@@ -84,6 +84,8 @@ function BetForm({
 function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
   const [mode, setMode] = useState<"implied" | "marginal">("implied");
   const vals = ladder.map((r) => (mode === "implied" ? r.implDaily : r.margDaily));
+  // center of probability mass for the CURRENT mode gets the hot color
+  const peakIdx = vals.reduce((bi, val, vi) => (val > vals[bi] ? vi : bi), 0);
 
   const CW = 640, CH = 170, padL = 46, padR = 8, padT = 10, padB = 26;
   const maxV = Math.max(...vals, 1e-9);
@@ -129,7 +131,7 @@ function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
           const top = Math.min(y(v), zero);
           const h = Math.abs(y(v) - zero);
           const cls =
-            v < 0 ? "pmf-bar-neg" : r.isPeak && mode === "implied" ? "pmf-bar-peak" : "pmf-bar";
+            v < 0 ? "pmf-bar-neg" : i === peakIdx && v > 0 ? "pmf-bar-peak" : "pmf-bar";
           return (
             <g key={r.endDate}>
               <title>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Catalog, CatalogEvent, LivePriceMap, NewsData } from "../lib/types";
 import { buildLadder, fmtVolume, liveYes, headlineMarket } from "../lib/analytics";
 import { buildGroups, memberLabel, type EventGroup } from "../lib/grouping";
@@ -22,14 +22,20 @@ function AddToWatchlist({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [hl, setHl] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const candidates = useMemo(() => {
     const q = query.trim().toLowerCase();
     return groups
       .filter((g) => !g.events.some((e) => watchlist.has(e.id)))
       .filter((g) => !q || g.title.toLowerCase().includes(q))
-      .slice(0, 10);
+      .slice(0, 50);
   }, [groups, watchlist, query]);
+
+  // keep the keyboard-highlighted row visible in the scrollable list
+  useEffect(() => {
+    listRef.current?.children[hl]?.scrollIntoView({ block: "nearest" });
+  }, [hl]);
 
   const add = (g: EventGroup) => {
     g.events.forEach((e) => { if (!watchlist.has(e.id)) onToggleWatch(e.id); });
@@ -63,7 +69,7 @@ function AddToWatchlist({
         }}
       />
       {open && candidates.length > 0 && (
-        <div className="combo-list">
+        <div className="combo-list" ref={listRef}>
           {candidates.map((g, i) => (
             <div
               key={g.key}

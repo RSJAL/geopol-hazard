@@ -4,7 +4,7 @@ import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import type { FeatureCollection } from "geojson";
 import type { CatalogEvent, CountryInfo, RegionInfo } from "../lib/types";
-import { fmtVolume } from "../lib/analytics";
+import { anchorCountry, fmtVolume } from "../lib/analytics";
 
 const W = 960;
 const H = 470;
@@ -101,24 +101,21 @@ export default function WorldMap({
   // "global" chip below, which drives CatalogPanel's __global__ filter
   const globalCount = visibleEvents.filter((e) => !e.region).length;
 
+  const regionOfCountry = useMemo(
+    () => new Map(countries.map((c) => [c.id, c.region])),
+    [countries],
+  );
+
   const bubbles: Bubble[] = useMemo(() => {
     const byAnchor = new Map<string, CatalogEvent[]>();
 
     for (const ev of visibleEvents) {
-      if (countryMode) {
-        // pin each event to its PRIMARY country only, so zoomed-in counts
-        // sum to the same totals as region view (no double counting)
-        const cids = ev.countries?.length ? [ev.countries[0]] : [];
-        for (const cid of cids) {
-          (byAnchor.get(cid) ?? byAnchor.set(cid, []).get(cid)!).push(ev);
-        }
-        if (!cids.length && ev.region) {
-          // no country match — keep on its region anchor even when zoomed
-          (byAnchor.get(ev.region) ?? byAnchor.set(ev.region, []).get(ev.region)!).push(ev);
-        }
-      } else if (ev.region) {
-        (byAnchor.get(ev.region) ?? byAnchor.set(ev.region, []).get(ev.region)!).push(ev);
-      }
+      if (!ev.region) continue; // global events stay off-map at every zoom
+      // zoomed in, pin to the event's own-region country (if any) so country
+      // counts always sum back to the region totals; else keep region anchor
+      const cid = countryMode ? anchorCountry(ev, regionOfCountry) : null;
+      const aid = cid ?? ev.region;
+      (byAnchor.get(aid) ?? byAnchor.set(aid, []).get(aid)!).push(ev);
     }
 
     const anchorInfo = new Map<string, { name: string; lat: number; lon: number; kind: "region" | "country" }>();
@@ -151,17 +148,30 @@ export default function WorldMap({
       });
     }
     return out.sort((a, b) => b.r - a.r);
-  }, [visibleEvents, regions, countries, projection, countryMode, betEventIds]);
+  }, [visibleEvents, regions, countries, regionOfCountry, projection, countryMode, betEventIds]);
 
   // ── focus/pan on selected event ─────────────────────────────────────────────
   const focusPoint = useMemo(() => {
-    if (!focusEvent) return null;
-    const c = focusEvent.countries?.length
-      ? countries.find((x) => x.id === focusEvent.countries[0])
+    if (!focusEvent?.region) return null; // global events have no map home
+    const cid = anchorCountry(focusEvent, regionOfCountry);
+    const info = cid
+      ? countries.find((x) => x.id === cid)
       : regions.find((x) => x.id === focusEvent.region);
-    if (!c) return null;
-    return projection([c.lon, c.lat]);
-  }, [focusEvent, countries, regions, projection]);
+    if (!info) return null;
+    return projection([info.lon, info.lat]);
+  }, [focusEvent, regionOfCountry, countries, regions, projection]);
+
+  // halo sits on whichever bubble holds the event at the current zoom, drawn
+  // OVER the bubbles and larger than them (it used to hide underneath)
+  const focusAnchorId = focusEvent?.region
+    ? (countryMode ? anchorCountry(focusEvent, regionOfCountry) : null) ?? focusEvent.region
+    : null;
+  const focusBubble = focusAnchorId ? bubbles.find((b) => b.id === focusAnchorId) : null;
+  const focusHalo = focusBubble
+    ? { x: focusBubble.x, y: focusBubble.y, r: focusBubble.r + 6 }
+    : focusAnchorId && focusPoint
+      ? { x: focusPoint[0], y: focusPoint[1], r: 20 }
+      : null;
 
   useEffect(() => {
     if (!focusPoint) return;
@@ -261,10 +271,6 @@ export default function WorldMap({
                   style={{ strokeWidth: 1.1 * inv }} />
           ))}
 
-          {focusPoint && (
-            <circle cx={focusPoint[0]} cy={focusPoint[1]} r={18 * inv} className="focus-halo" />
-          )}
-
           {bubbles.map((b) => {
             // country bubbles filter with a "country:" prefix
             const filterId = b.kind === "region" ? b.id : `country:${b.id}`;
@@ -300,20 +306,21 @@ export default function WorldMap({
               </g>
             );
           })}
+
+          {focusHalo && (
+            <circle cx={focusHalo.x} cy={focusHalo.y} r={focusHalo.r * inv} className="focus-halo" />
+          )}
         </g>
       </svg>
 
       <div className="map-footer">
         <div className="map-filter">
-          {(["all", "watch", "bets"] as MapFilter[]).map((f) => (
-            <button
-              key={f}
-              className={`chip${filter === f ? " chip-active" : ""}`}
-              onClick={() => setFilter(f)}
-            >
-              {f === "all" ? "all markets" : f === "watch" ? "★ watchlist" : "$ my bets"}
-            </button>
-          ))}
+          <button
+            className={`chip${filter === "all" ? " chip-active" : ""}`}
+            onClick={() => setFilter("all")}
+          >
+            all markets
+          </button>
           {globalCount > 0 && (
             <button
               className={`chip${selectedRegion === "__global__" ? " chip-active" : ""}`}
@@ -324,6 +331,15 @@ export default function WorldMap({
               ◌ global ({globalCount})
             </button>
           )}
+          {(["watch", "bets"] as MapFilter[]).map((f) => (
+            <button
+              key={f}
+              className={`chip${filter === f ? " chip-active" : ""}`}
+              onClick={() => setFilter(f)}
+            >
+              {f === "watch" ? "★ watchlist" : "$ my bets"}
+            </button>
+          ))}
           {selectedRegion && selectedRegion !== "__global__" && (
             <button className="chip chip-active" onClick={() => onSelectRegion(null)}>
               ✕ {selectedRegion.startsWith("country:")

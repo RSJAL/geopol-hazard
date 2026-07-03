@@ -296,6 +296,7 @@ a:hover { text-decoration: underline; }
 .focus-halo {
   fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.9;
   animation: halo 1.6s ease-out infinite;
+  pointer-events: none; /* decoration only — clicks reach bubbles/background */
 }
 @keyframes halo {
   0% { opacity: 0.9; }
@@ -417,7 +418,8 @@ a:hover { text-decoration: underline; }
 .combo-list {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
   background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
-  box-shadow: 0 8px 24px #00000088; overflow: hidden; padding: 4px;
+  box-shadow: 0 8px 24px #00000088; padding: 4px;
+  max-height: 340px; overflow-y: auto;
 }
 .combo-item {
   display: flex; justify-content: space-between; align-items: baseline; gap: 10px;

@@ -143,6 +143,19 @@ export function fmtPct(v: number, digits = 1): string {
   return `${v.toFixed(digits)}%`;
 }
 
+/**
+ * Zoomed-in map anchor: the event's first country that belongs to its own
+ * region, else null (event stays on the region bubble). Keeping anchors
+ * inside the region makes country counts split region totals exactly.
+ */
+export function anchorCountry(
+  ev: CatalogEvent,
+  regionOfCountry: Map<string, string | undefined>,
+): string | null {
+  if (!ev.region) return null;
+  return ev.countries?.find((c) => regionOfCountry.get(c) === ev.region) ?? null;
+}
+
 /** Nearest-deadline market of an event (for compact list rows). */
 export function headlineMarket(ev: CatalogEvent): CatalogMarket {
   if (ev.type === "categorical") {

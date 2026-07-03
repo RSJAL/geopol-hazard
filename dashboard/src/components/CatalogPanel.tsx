@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Catalog, CatalogEvent, LivePriceMap } from "../lib/types";
-import { fmtVolume, headlineMarket, liveYes } from "../lib/analytics";
+import { anchorCountry, fmtVolume, headlineMarket, liveYes } from "../lib/analytics";
 
 interface Props {
   catalog: Catalog;
@@ -34,12 +34,18 @@ export default function CatalogPanel({
     [catalog],
   );
 
+  const regionOfCountry = useMemo(
+    () => new Map(catalog.countries.map((c) => [c.id, c.region])),
+    [catalog],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let evs = catalog.events.filter((e) => {
       if (regionFilter === "__global__" && e.region) return false;
       if (regionFilter?.startsWith("country:")) {
-        if (e.countries?.[0] !== regionFilter.slice(8)) return false;
+        // same anchor rule as the map bubbles, so counts match the list
+        if (anchorCountry(e, regionOfCountry) !== regionFilter.slice(8)) return false;
       } else if (regionFilter && regionFilter !== "__global__" && e.region !== regionFilter) {
         return false;
       }
@@ -59,7 +65,7 @@ export default function CatalogPanel({
       case "endDate":   evs = evs.sort((a, b) => a.endDate.localeCompare(b.endDate)); break;
     }
     return evs;
-  }, [catalog, query, category, type, sort, watchOnly, watchlist, regionFilter]);
+  }, [catalog, query, category, type, sort, watchOnly, watchlist, regionFilter, regionOfCountry]);
 
   return (
     <div className="catalog-panel">
