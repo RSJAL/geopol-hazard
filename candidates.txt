@@ -1,0 +1,822 @@
+Tags  : geopolitics, macro-geopolitics, military-action, nuclear, us-iran, israel-x-iran, iranian-leadership-regime, taiwan, ukraine-map, ukraine-peace-deal
+Min vol: $5,000  |  Reference date: 2026-07-02
+
+  fetching tag: geopolitics ...
+  fetching tag: macro-geopolitics ...
+  fetching tag: military-action ...
+  fetching tag: nuclear ...
+  fetching tag: us-iran ...
+  fetching tag: israel-x-iran ...
+  fetching tag: iranian-leadership-regime ...
+  fetching tag: taiwan ...
+  fetching tag: ukraine-map ...
+  fetching tag: ukraine-peace-deal ...
+
+Unique events with qualifying markets: 260
+
+========================================================================
+  MILITARY CONFLICT  (65 events)
+========================================================================
+
+  China x Taiwan military clash before 2027?
+  Tags : hfc, world, taiwan, foreign-policy, china, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      6.5%    182  $    2,683,206
+
+  Iran full airspace closure by...?
+  Tags : iran, close, trump-iran, israel-x-iran, diplomacy-ceasefire
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-15      9.0%     13  $      164,869
+  2026-07-31     17.5%     29  $       73,571
+  2026-08-31     34.5%     60  $       56,552
+
+  Israel and Lebanon normalize relations before 2027?
+  Tags : israel-x-iran, israel, middle-east, world, lebanon, politics, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     16.5%    182  $      219,729
+
+  Israel closes its airspace by...?
+  Tags : politics, geopolitics, israel-x-iran, iran, israel, rewards-50-4pt5-20
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-07      1.4%      5  $      111,496
+  2026-07-15      2.8%     13  $      721,633
+  2026-07-15     13.0%     13  $        7,120
+  2026-07-31      6.5%     29  $      796,065
+
+  Israel withdraws from Lebanon by...?
+  Tags : geopolitics, diplomacy-ceasefire, iran, lebanon, israel, israel-x-iran, peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      1.3%     29  $    1,487,620
+  2026-08-31      5.5%     60  $      323,840
+  2026-09-30     11.0%     90  $       32,670
+  2026-12-31     21.5%    182  $       62,979
+
+  Israel x Hezbollah permanent peace deal by...?
+  Tags : geopolitics, iran, israel, israel-x-iran, diplomacy-ceasefire, lebanon, hezbollah, peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      2.6%     29  $    1,017,881
+
+  Israel x Iran permanent peace deal by...?
+  Tags : geopolitics, lebanon, diplomacy-ceasefire, israel, iran, israel-x-iran, hezbollah, peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      3.2%     29  $      463,467
+
+  Israeli forces withdraw from beyond the Litani River by…?
+  Tags : israel, litani, lebanon, politics, geopolitics, middle-east, israel-x-iran, rewards-50-4pt5-20
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      3.2%     29  $      131,600
+  2026-12-31     48.0%    182  $       63,725
+
+  Lai Ching-te out as President of Taiwan by December 31, 2026?
+  Tags : politics, taiwan, china, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      4.0%    182  $      104,130
+
+  Taiwanese Premier Cho Jung-tai out by...?
+  Tags : china, politics, world, taiwan, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     13.0%    182  $        9,961
+
+  US x Russia military clash by...?
+  Tags : trump-presidency, trump, geopolitics, world, military-action, us-iran
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      5.7%    182  $    1,021,141
+
+  Which cities will Russia enter by December 31?
+  Tags : geopolitics, ukraine-map, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     24.0%    182  $       29,830
+  2026-12-31      9.5%    182  $       40,099
+  2026-12-31     23.5%    182  $       50,966
+  2026-12-31     52.5%    182  $       40,988
+  2026-12-31     16.0%    182  $       17,102
+  2026-12-31      5.3%    182  $       15,037
+  2026-12-31      7.7%    182  $       71,337
+
+  Will China blockade Taiwan in 2026?
+  Tags : geopolitics, taiwan, china, hfc
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      6.5%    182  $       76,527
+
+  Will China invade Taiwan by June 30, 2027?
+  Tags : china, politics, geopolitics, taiwan
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2027-06-30      8.5%    363  $      300,969
+
+  Will Israel reopen its embassy in Iran in 2026?
+  Tags : israel, middle-east, geopolitics, iran, politics, israel-x-iran
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      3.1%    182  $      160,941
+
+  Will Russia capture Borova by December 31, 2026?
+  Tags : ukraine-map, ukraine, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     22.5%    182  $       11,275
+
+  Will Russia capture Kostyantynivka by...?
+  Tags : ukraine, politics, world, geopolitics, russia-capture, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     31.0%     29  $       22,000
+  2026-09-30     68.0%     90  $      118,879
+  2026-12-31     85.0%    182  $      641,097
+
+  Will Russia capture Kupiansk by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     13.5%    182  $       30,400
+  2026-12-31     28.0%    182  $        6,034
+
+  Will Russia capture Kupiansk-Vuzlovyi by...?
+  Tags : politics, ukraine-map, geopolitics, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     46.5%    182  $        9,950
+
+  Will Russia capture Lyman by...?
+  Tags : ukraine, geopolitics, world-affairs, politics, world, russia-capture, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30     28.0%     90  $       13,248
+
+  Will Russia capture Mala Tokmachka by...?
+  Tags : ukraine-map, ukraine, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30     15.0%     90  $       81,941
+
+  Will Russia capture Myropillia by...?
+  Tags : ukraine, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      0.9%     29  $       34,960
+
+  Will Russia capture Orikhiv by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30      5.0%     90  $       15,534
+  2026-12-31     21.5%    182  $       16,245
+
+  Will Russia capture Prymorske by...?
+  Tags : geopolitics, ukraine-map, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31        ?%    182  $       17,210
+  2026-12-31      8.5%    182  $        8,949
+  2026-12-31     32.0%    182  $       14,091
+
+  Will Russia capture Rai-Oleksandrivka by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     74.0%    182  $        8,110
+
+  Will Russia capture Serhiivka by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      2.9%     29  $       28,627
+
+  Will Russia capture Sofiivka by...?
+  Tags : ukraine, politics, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     49.5%    182  $        8,925
+
+  Will Russia capture Stavky by...?
+  Tags : geopolitics, ukraine-map, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      7.5%     29  $       42,089
+
+  Will Russia capture Sumy by...?
+  Tags : geopolitics, ukraine, world, putin, russia-capture, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2027-03-31      9.0%    272  $      304,246
+
+  Will Russia capture Toretske by...?
+  Tags : ukraine, ukraine-map, geopolitics, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      9.0%     29  $       34,764
+
+  Will Russia capture Verkhnia Tersa by...?
+  Tags : ukraine, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     14.5%     29  $        9,233
+
+  Will Russia capture all of Chasiv Yar by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30     31.5%     90  $        7,497
+  2026-12-31     66.0%    182  $        5,208
+
+  Will Russia capture all of Donetsk Oblast by...?
+  Tags : ukraine-map, geopolitics, putin, ukraine, politics, russia, military-action
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      4.9%    182  $      156,564
+
+  Will Russia capture all of Drobysheve by...?
+  Tags : politics, ukraine, geopolitics, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      4.5%     29  $       68,682
+
+  Will Russia capture all of Huliaipole by...?
+  Tags : ukraine-map, geopolitics, politics, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30     67.0%     90  $        5,383
+
+  Will Russia capture all of Kostyantynivka by...?
+  Tags : ukraine, politics, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      5.1%     29  $       36,602
+  2026-09-30     19.5%     90  $       15,453
+  2026-12-31        ?%    182  $      244,685
+  2026-12-31     43.5%    182  $      259,864
+
+  Will Russia capture all of Kupiansk by...?
+  Tags : world, politics, military-action, kupyansk, russia-capture, putin, ukraine-map, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     11.5%    182  $       20,339
+
+  Will Russia capture all of Lyman by...?
+  Tags : ukraine, ukraine-map, politics, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31        ?%    182  $       72,621
+  2026-12-31     24.0%    182  $      194,295
+
+  Will Russia capture all of Prymorske by...?
+  Tags : putin, politics, ukraine, ukraine-map, geopolitics, russia, russia-capture, military-action
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30      5.7%     90  $       75,839
+  2026-12-31      8.5%    182  $       34,124
+
+  Will Russia capture all of Rodynske again by...?
+  Tags : ukraine, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     29.0%     29  $       18,785
+
+  Will Russia capture all of Stepnohirsk by...?
+  Tags : politics, putin, ukraine, russia-capture, ukraine-map, russia, geopolitics, military-action
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30      6.3%     90  $    1,279,118
+
+  Will Russia capture all of Ternuvate by...?
+  Tags : politics, geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     13.5%    182  $        6,823
+
+  Will Russia capture all of Vovchansk by...?
+  Tags : ukraine, politics, military-action, russia-capture, putin, ukraine-map, russia, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30     19.0%     90  $       27,000
+  2026-12-31     43.0%    182  $        9,781
+
+  Will Russia enter Dobropillia by...?
+  Tags : ukraine-map, ukraine, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     60.0%    182  $       27,405
+
+  Will Russia enter Havrylivka by...?
+  Tags : politics, ukraine-map, geopolitics, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      5.5%     29  $       53,257
+
+  Will Russia enter Khatnie by...?
+  Tags : ukraine, geopolitics, ukraine-map, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     11.0%     29  $       10,773
+
+  Will Russia enter Krasnoiarske by...?
+  Tags : geopolitics, ukraine-map, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     12.5%     29  $       67,627
+  2026-12-31     61.0%    182  $        6,125
+
+  Will Russia enter Krasnopillya by...?
+  Tags : ukraine, politics, geopolitics, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      2.9%     29  $       14,615
+
+  Will Russia enter Malokaterynivka by...?
+  Tags : ukraine, ukraine-map, geopolitics, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     15.0%    182  $        7,368
+
+  Will Russia enter Moskovka by...?
+  Tags : ukraine, geopolitics, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     13.0%     29  $        5,531
+
+  Will Russia enter Mykhailivka by...?
+  Tags : politics, ukraine, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      9.0%     29  $       18,254
+
+  Will Russia enter Myrne by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     24.5%     29  $        6,885
+
+  Will Russia enter Orikhiv by...?
+  Tags : politics, ukraine, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      5.5%     29  $       26,432
+
+  Will Russia enter Pokrovskoe by...?
+  Tags : ukraine, ukraine-map, geopolitics, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     43.5%    182  $        5,464
+
+  Will Russia enter Serhiivka by...?
+  Tags : ukraine-map, ukraine, politics, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      9.0%     29  $       16,683
+
+  Will Russia enter Stinky by...?
+  Tags : ukraine-map, politics, ukraine, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     19.5%     29  $       14,366
+
+  Will Russia enter Ternuvate again by...?
+  Tags : ukraine, politics, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     13.0%     29  $        5,394
+
+  Will Russia enter Vasylivka by...?
+  Tags : ukraine, ukraine-map, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31     43.5%     29  $       15,750
+
+  Will Russia invade another country in 2026?
+  Tags : politics, armenia, military-action, geopolitics, putin, russia
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      8.5%    182  $      280,245
+
+  Will Ukraine re-enter Maliivka by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     68.0%    182  $       11,728
+
+  Will Ukraine re-enter Obratne or Temyrivka by...?
+  Tags : geopolitics, ukraine, ukraine-map
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     31.5%    182  $        5,758
+
+  Will Ukraine re-enter Uspenivka by...?
+  Tags : ukraine, ukraine-map, politics, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     28.5%    182  $        5,912
+
+  Will Ukraine recapture Crimean territory by...?
+  Tags : ukraine, world, russia, ukraine-map, geopolitics, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     11.5%    182  $    1,449,392
+
+  Will any country expel a U.S. ambassador by December 31?
+  Tags : iran, politics, israel, israel-x-iran, diplomacy-ceasefire, middle-east, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     16.5%    182  $       17,005
+
+  Will any country expel an Israeli ambassador by December 31?
+  Tags : israel-x-iran, middle-east, geopolitics, israel, iran
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     29.5%    182  $       36,921
+
+========================================================================
+  MILITARY / NUCLEAR  (8 events)
+========================================================================
+
+   Iran agrees to end enrichment of uranium by December 31?
+  Tags : geopolitics, trump, nuclear, middle-east, iran, trump-iran, diplomacy-ceasefire, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     29.5%    182  $    1,221,753
+
+   Iran agrees to end enrichment of uranium by July 31?
+  Tags : trump, geopolitics, iran, trump-iran, diplomacy-ceasefire, politics, nuclear, middle-east
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      3.6%     29  $      812,146
+
+  Iran Nuke before 2027?
+  Tags : nuclear, politics, world, geopolitics, iran, middle-east
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      6.2%    182  $    1,081,254
+
+  Iran agrees to surrender enriched uranium stockpile by...?
+  Tags : geopolitics, trump, middle-east, diplomacy-ceasefire, politics, trump-iran, iran, nuclear
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      2.2%     29  $      911,716
+  2026-12-31     16.5%    182  $    1,903,666
+
+  Iran nuclear test before 2027?
+  Tags : nuclear, iran, politics, foreign-policy, geopolitics, middle-east, world
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      5.5%    182  $      218,761
+
+  What will be in a US-Iran deal in 2026?
+  Tags : fund, iran, enrich, nuclear, uranium, politics, peace-deal, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     26.5%    182  $       24,163
+  2026-12-31     38.5%    182  $       37,444
+  2026-12-31     35.5%    182  $       53,595
+  2026-12-31     37.0%    182  $       46,537
+  2026-12-31     38.5%    182  $       35,540
+  2026-12-31     14.5%    182  $       15,565
+
+  Where will the next next round of US-Iran peace talks be...?
+  Tags : iran, trump, vance, nuclear, us-iran, khamenei, politics, peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30     11.5%     90  $       54,020
+  2026-09-30      1.2%     90  $      220,027
+  2026-09-30      1.6%     90  $       30,820
+  2026-09-30      0.7%     90  $       44,088
+  2026-09-30     27.5%     90  $      350,958
+  2026-09-30     27.0%     90  $      115,332
+  2026-09-30      0.7%     90  $       69,517
+  2026-09-30      1.1%     90  $       20,743
+  2026-09-30      0.6%     90  $       28,445
+  2026-09-30      1.4%     90  $       23,679
+  2026-09-30      0.9%     90  $       26,780
+  2026-09-30      0.2%     90  $       89,711
+  2026-09-30      0.4%     90  $       20,391
+  2026-09-30      0.4%     90  $       26,595
+  2026-09-30     10.8%     90  $       45,146
+  2026-09-30      0.1%     90  $       27,518
+  2026-09-30      0.5%     90  $       60,219
+  2026-09-30      0.7%     90  $       34,105
+  2026-09-30      0.9%     90  $      545,845
+
+  Will Iran withdraw from the NPT before 2027?
+  Tags : iran, geopolitics, politics, middle-east, nuclear
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     11.5%    182  $      192,253
+
+========================================================================
+  DIPLOMACY  (18 events)
+========================================================================
+
+  EU/NATO country announces peacekeeping force in Ukraine by...?
+  Tags : world, trump, politics, zelenskyy, eu, ukraine, putin, nato
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31        ?%    182  $      397,134
+  2026-12-31     16.0%    182  $       38,400
+
+  European country agrees to give Ukraine security guarantee by...? 
+  Tags : politics, geopolitics, world, ukraine, russia, europe, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     12.0%    182  $       16,156
+
+  Next round of US-Iran peace talks by...?
+  Tags : iran, trump, vance, us-iran, politics, peace-deal, geopolitics, trump-iran
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-03      0.9%      1  $    1,469,108
+  2026-07-10      4.5%      8  $      525,249
+  2026-07-17     22.0%     15  $      105,477
+  2026-07-31     69.5%     29  $      319,566
+
+  Russia x Ukraine Ceasefire by...?
+  Tags : geopolitics, ukraine-peace-deal, putin, zelensky, trump, ukraine, zelenskyy
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31        ?%    182  $       59,354
+  2026-12-31        ?%    182  $      290,558
+  2026-12-31     12.5%    182  $      177,364
+  2026-12-31     22.5%    182  $      180,572
+
+  Russia x Ukraine Peace Parlay
+  Tags : sports, peace, geopolitics, putin, ukraine, russia, zelenskyy, parlays
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     13.5%    182  $      535,527
+
+  Russia x Ukraine ceasefire agreement by...?
+  Tags : politics, russia, ukraine-peace-deal, geopolitics, putin, zelensky, zelenskyy, ukraine
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-08-31     12.5%     60  $       30,382
+  2026-10-31     24.5%    121  $      613,298
+  2026-12-31        ?%    182  $      817,235
+  2026-12-31     41.5%    182  $    1,943,463
+
+  US-Iran Final Nuclear Deal by…?
+  Tags : iran, us-iran, peace-deal, geopolitics, middle-east, diplomacy-ceasefire
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      1.8%     29  $      483,455
+  2026-08-13      7.5%     42  $      141,372
+  2026-08-18     19.5%     47  $      378,625
+  2026-08-31     23.5%     60  $    1,882,324
+  2026-09-30     31.5%     90  $      114,153
+  2026-09-30     47.0%     90  $      131,291
+
+  Ukraine agrees not to join NATO before 2027? 
+  Tags : nato, world, trump, geopolitics, foreign-policy, ukraine, putin, russia
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      8.5%    182  $      121,878
+
+  Ukraine agrees not to join NATO by August 31?
+  Tags : nato, world, russia, ukraine, politics, geopolitics, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-08-31      5.5%     60  $       14,251
+
+  Ukraine agrees to limit size of armed forces before 2027?
+  Tags : politics, ukraine, geopolitics, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     14.5%    182  $       97,259
+
+  Ukraine peace referendum passed before 2027?
+  Tags : trump, russia, zelensky, ukraine-peace-deal, politics, geopolitics, putin, trump-zelenskyy
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     10.0%    182  $       29,694
+
+  Ukraine peace referendum scheduled by...?
+  Tags : ukraine, geopolitics, trump, zelensky, putin, politics, russia, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30      6.0%     90  $       14,887
+  2026-12-31     11.0%    182  $        8,783
+
+  Ukraine signs peace deal with Russia before 2027?
+  Tags : geopolitics, ukraine, politics, world, foreign-policy, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     24.5%    182  $    2,378,394
+
+  Ukraine signs peace deal with Russia by August 31?
+  Tags : world, ukraine, politics, geopolitics, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-08-31      6.0%     60  $      113,170
+
+  Who will attend a round of US-Iran peace talks by August 31?
+  Tags : iran, trump, us-iran, politics, peace-deal, geopolitics, israel-x-iran, diplomacy-ceasefire
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-08-31     67.0%     60  $        5,101
+
+  Will Ukraine agree to cede territory to Russia by...?
+  Tags : zelenskyy, russia, trump, geopolitics, politics, ukraine, world, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-08-31      4.0%     60  $       33,188
+  2026-12-31     10.5%    182  $      633,594
+
+  Will Ukraine agree to give up the rest of Donbas before 2027?
+  Tags : ukraine, geopolitics, world, politics, donestk, ukraine-peace-deal
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      5.5%    182  $      143,286
+
+  Will the US officially declare war on Iran by...?
+  Tags : us-iran, israel, iran, geopolitics, politics, middle-east, world, trump-presidency
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      5.5%    182  $      618,223
+
+========================================================================
+  LEADERSHIP  (9 events)
+========================================================================
+
+  Iran coup attempt by...?
+  Tags : geopolitics, iranian-leadership-regime, reza-pahlavi, iran, israel, world, trump, middle-east
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     14.5%    182  $        8,960
+
+  Iran leader end of 2026?
+  Tags : middle-east, iran, world, geopolitics, politics, iranian-leadership-regime, rewards-50-4pt5-100
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      2.6%    182  $      988,357
+  2026-12-31      0.2%    182  $      382,815
+  2026-12-31      0.2%    182  $      485,668
+  2026-12-31     83.4%    182  $    2,937,214
+  2026-12-31      0.2%    182  $    1,223,156
+  2026-12-31      3.3%    182  $      386,511
+  2026-12-31      0.2%    182  $      264,965
+  2026-12-31      0.2%    182  $      691,838
+  2026-12-31      0.2%    182  $      348,665
+  2026-12-31      0.1%    182  $      188,010
+  2026-12-31      0.2%    182  $      105,684
+  2026-12-31      0.2%    182  $      160,626
+  2026-12-31      0.2%    182  $      122,308
+  2026-12-31      0.1%    182  $      208,290
+  2026-12-31      0.1%    182  $      380,040
+  2026-12-31      0.2%    182  $      181,427
+  2026-12-31      0.2%    182  $      190,844
+  2026-12-31      0.7%    182  $      789,669
+  2026-12-31      0.2%    182  $      156,073
+  2026-12-31      0.2%    182  $      763,338
+  2026-12-31      0.2%    182  $      546,362
+  2026-12-31      0.2%    182  $      717,048
+  2026-12-31      1.2%    182  $    2,056,127
+  2026-12-31        ?%    182  $      236,860
+  2026-12-31      0.8%    182  $      624,977
+  2026-12-31      0.2%    182  $      500,426
+  2026-12-31      0.1%    182  $      233,424
+  2026-12-31      0.2%    182  $      197,300
+  2026-12-31      0.1%    182  $      261,305
+  2026-12-31      0.2%    182  $      305,754
+  2026-12-31      2.9%    182  $      688,883
+
+  Iran leadership change by...?
+  Tags : politics, iran, iranian-leadership-regime, geopolitics, mojtaba, ayatollah, khamenei, mojtaba-khamenei
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      2.7%     29  $       13,566
+  2026-12-31     15.5%    182  $    3,045,268
+
+  US recognizes Reza Pahlavi as leader of Iran in 2026?
+  Tags : reza-pahlavi, iranian-leadership-regime, geopolitics, world, iran, politics, middle-east, trump
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      4.2%    182  $      610,995
+
+  Will Reza Pahlavi enter Iran by...?
+  Tags : shah, reza-pahlavi, iranian-leadership-regime, iran, world, middle-east, israel, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      5.5%    182  $    1,909,838
+
+  Will Reza Pahlavi lead Iran in 2026?
+  Tags : iran, shah, geopolitics, politics, reza-pahlavi, iranian-leadership-regime
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      4.2%    182  $   11,564,058
+
+  Will the Iranian regime fall before 2027?
+  Tags : reza-pahlavi, iranian-leadership-regime, iran, israel, world, trump, khamenei, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      8.5%    182  $   21,097,753
+
+  Will the Iranian regime fall by September 30?
+  Tags : iran, khamenei, politics, geopolitics, iranian-leadership-regime
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30      3.1%     90  $       73,231
+
+  Will the US reopen its embassy in Iran in 2026?
+  Tags : middle-east, politics, geopolitics, iran, world, trump-iran, iranian-leadership-regime
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      7.5%    182  $      152,810
+
+========================================================================
+  GEOPOLITICS  (160 events)
+========================================================================
+
+  0 ships transit Hormuz on any date by..?
+  Tags : iran, close, ships, geopolitics, strait-of-hormuz
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-07-31      5.5%     29  $       10,987
+
+  Ahmed al-Sharaa out as leader of Syria by December 31, 2026?
+  Tags : politics, geopolitics, israel, world, syria, middle-east, trump-x-al-sharaa
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     10.5%    182  $       64,473
+
+  Anthony Albanese out as Prime Minister of Australia by...? 
+  Tags : australia, geopolitics, politics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      8.3%    182  $        7,683
+  2026-12-31        ?%    182  $        8,001
+
+  Any country withdraws from EU before 2027?
+  Tags : politics, geopolitics, world
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      5.5%    182  $      145,862
+
+  Aziz Akhannouch out as Morocco Prime Minister by December 31, 2026?
+  Tags : politics, geopolitics, middle-east, world
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     84.5%    182  $      163,087
+
+  China coup attempt before 2027?
+  Tags : hfc, politics, geopolitics, world, china, xi-jinping
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      2.6%    182  $      144,122
+
+  China x India military clash by...?
+  Tags : geopolitics, politics, china, india, world
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      6.5%    182  $      189,885
+
+  China x Japan military clash before 2027?
+  Tags : hfc, china, world, geopolitics, japan
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      7.5%    182  $      784,299
+
+  China x Philippines military clash before 2027?
+  Tags : china, world, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     13.5%    182  $    1,190,706
+
+  Crude Oil all time high by...?
+  Tags : oil, geopolitics, commodities, finance, iran
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-09-30      3.7%     90  $      331,869
+  2026-12-31      8.5%    182  $      253,140
+
+  Cuban regime falls in 2026?
+  Tags : geopolitics, trump, cuba, pcc, overthrow, communist-party-of-cuba, miguel-diaz-canel, castro
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     12.5%    182  $    1,424,693
+
+  Delcy Rodríguez out as leader of Venezuela by...?
+  Tags : maduro, world, venezuela, politics, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      8.5%    182  $      160,712
+
+  EU dissolves before 2027?
+  Tags : politics, world, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31      3.2%    182  $      175,057
+
+  Edi Rama out as Albania PM in 2026?
+  Tags : politics, albania, prime-minister, geopolitics
+  End date        YES%   Days      Volume USD
+  ------------  ------  -----  --------------
+  2026-12-31     29.0%    182  $       83,321

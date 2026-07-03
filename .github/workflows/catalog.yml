@@ -1,0 +1,52 @@
+name: Refresh market catalog
+
+on:
+  schedule:
+    - cron: "*/30 * * * *" # every 30 minutes
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: write # to dispatch the Pages deploy after committing
+
+concurrency:
+  group: catalog-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - name: Build catalog
+        run: python pipeline/build_catalog.py
+
+      - name: Commit if changed
+        id: commit
+        run: |
+          git config user.name "catalog-bot"
+          git config user.email "actions@github.com"
+          git add dashboard/public/data/catalog.json
+          if git diff --cached --quiet; then
+            echo "No catalog changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore: refresh market catalog"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # pushes made with GITHUB_TOKEN don't fire the push-triggered deploy
+      # workflow, so dispatch it explicitly when the catalog changed
+      - name: Trigger Pages deploy
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main --repo "$GITHUB_REPOSITORY"

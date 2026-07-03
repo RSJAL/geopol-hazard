@@ -1,0 +1,153 @@
+import type { CatalogEvent, CatalogMarket, LivePriceMap } from "./types";
+
+export interface LadderRow {
+  market: CatalogMarket;
+  label: string;
+  endDate: string;
+  days: number;
+  yes: number; // cumulative YES %
+  marginal: number; // marginal probability of this window, pct points
+  implDaily: number; // cumulative YES% / days
+  margDaily: number; // marginal % / window days
+  windowDays: number;
+  isPeak: boolean;
+  isInversion: boolean; // implied daily fell vs prior deadline
+  isCheap: boolean; // marginal daily < 40% of implied daily
+  isNegativeMarginal: boolean; // longer deadline priced BELOW shorter one
+}
+
+const MS_DAY = 86_400_000;
+
+export function daysFromToday(endDate: string): number {
+  const end = new Date(endDate + "T23:59:59Z").getTime();
+  return Math.max(1, Math.ceil((end - Date.now()) / MS_DAY));
+}
+
+export function deadlineLabel(endDate: string): string {
+  const d = new Date(endDate + "T12:00:00Z");
+  const sameYear = d.getUTCFullYear() === new Date().getUTCFullYear();
+  const opts: Intl.DateTimeFormatOptions = sameYear
+    ? { month: "short", day: "numeric", timeZone: "UTC" }
+    : { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" };
+  return "By " + d.toLocaleDateString("en-US", opts);
+}
+
+export function liveYes(m: CatalogMarket, live: LivePriceMap): number {
+  return live.get(m.id)?.yes ?? m.yes;
+}
+
+/**
+ * Build the deadline ladder for a horizon event. When several sub-markets
+ * share an end date (different outcome thresholds), the highest-volume one
+ * is used.
+ */
+export function buildLadder(ev: CatalogEvent, live: LivePriceMap): LadderRow[] {
+  const byEnd = new Map<string, CatalogMarket>();
+  for (const m of ev.markets) {
+    const cur = byEnd.get(m.endDate);
+    if (!cur || m.volume > cur.volume) byEnd.set(m.endDate, m);
+  }
+  const markets = [...byEnd.values()]
+    .map((m) => ({ m, days: daysFromToday(m.endDate) }))
+    .sort((a, b) => a.days - b.days);
+
+  const implVals = markets.map(({ m, days }) => liveYes(m, live) / days);
+  const peak = Math.max(...implVals);
+
+  const rows: LadderRow[] = [];
+  let prevYes = 0;
+  let prevDays = 0;
+  let prevImpl: number | null = null;
+
+  for (const { m, days } of markets) {
+    const yes = liveYes(m, live);
+    const impl = yes / days;
+    const marginal = yes - prevYes;
+    const windowDays = days - prevDays;
+    const margDaily = windowDays > 0 ? marginal / windowDays : impl;
+
+    rows.push({
+      market: m,
+      label: deadlineLabel(m.endDate),
+      endDate: m.endDate,
+      days,
+      yes,
+      marginal,
+      implDaily: impl,
+      margDaily,
+      windowDays,
+      isPeak: Math.abs(impl - peak) < 1e-9,
+      isInversion: prevImpl !== null && impl < prevImpl,
+      isCheap: prevImpl !== null && marginal >= 0 && margDaily < impl * 0.4,
+      isNegativeMarginal: marginal < 0,
+    });
+    prevYes = yes;
+    prevDays = days;
+    prevImpl = impl;
+  }
+  return rows;
+}
+
+export interface CatalogStats {
+  nEvents: number;
+  nMarkets: number;
+  nHorizon: number;
+  totalVolume: number;
+  spikeRatio: number;
+  spikeEvent: string;
+  totalInversions: number;
+  cheapWindows: number;
+}
+
+export function catalogStats(events: CatalogEvent[], live: LivePriceMap): CatalogStats {
+  let spikeRatio = 0;
+  let spikeEvent = "";
+  let totalInversions = 0;
+  let cheapWindows = 0;
+
+  for (const ev of events) {
+    if (ev.type !== "horizon") continue;
+    const rows = buildLadder(ev, live);
+    const impls = rows.map((r) => r.implDaily);
+    if (impls.length >= 2) {
+      const ratio = Math.max(...impls) / (Math.min(...impls) + 1e-9);
+      if (ratio > spikeRatio) {
+        spikeRatio = ratio;
+        spikeEvent = ev.title;
+      }
+    }
+    totalInversions += rows.filter((r) => r.isInversion).length;
+    cheapWindows += rows.filter((r) => r.isCheap).length;
+  }
+
+  return {
+    nEvents: events.length,
+    nMarkets: events.reduce((s, e) => s + e.markets.length, 0),
+    nHorizon: events.filter((e) => e.type === "horizon").length,
+    totalVolume: events.reduce((s, e) => s + e.volume, 0),
+    spikeRatio,
+    spikeEvent,
+    totalInversions,
+    cheapWindows,
+  };
+}
+
+export function fmtVolume(v: number): string {
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
+}
+
+export function fmtPct(v: number, digits = 1): string {
+  return `${v.toFixed(digits)}%`;
+}
+
+/** Nearest-deadline market of an event (for compact list rows). */
+export function headlineMarket(ev: CatalogEvent): CatalogMarket {
+  if (ev.type === "categorical") {
+    // most-traded bucket is the headline
+    return ev.markets.reduce((a, b) => (b.volume > a.volume ? b : a));
+  }
+  return ev.markets.reduce((a, b) => (b.endDate < a.endDate ? b : a));
+}
