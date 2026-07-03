@@ -1,38 +1,62 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Catalog, LivePriceMap } from "./lib/types";
-import { fetchCatalog, fetchLivePrices } from "./lib/api";
+import type { Bet, Catalog, CatalogEvent, CatalogMarket, LivePriceMap, NewsData } from "./lib/types";
+import { fetchCatalog, fetchLivePrices, fetchNews } from "./lib/api";
 import { catalogStats, fmtVolume } from "./lib/analytics";
 import { loadWatchlist, persist } from "./lib/watchlist";
+import { loadBets, persistBets } from "./lib/bets";
 import WorldMap from "./components/WorldMap";
 import CatalogPanel from "./components/CatalogPanel";
 import EventDetail from "./components/EventDetail";
 import WatchlistPanel from "./components/WatchlistPanel";
+import BetsPanel from "./components/BetsPanel";
+import MarketsPage from "./components/MarketsPage";
+import EventPage from "./components/EventPage";
 
 const LIVE_REFRESH_MS = 60_000;
 
+type Route = { page: "map" } | { page: "markets" } | { page: "event"; id: string };
+
+function parseRoute(): Route {
+  const h = window.location.hash;
+  if (h.startsWith("#/event/")) return { page: "event", id: decodeURIComponent(h.slice(8)) };
+  if (h.startsWith("#/markets")) return { page: "markets" };
+  return { page: "map" };
+}
+
 export default function App() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [news, setNews] = useState<NewsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<LivePriceMap>(new Map());
   const [lastLiveAt, setLastLiveAt] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>(() => loadWatchlist());
+  const [bets, setBets] = useState<Bet[]>(() => loadBets());
   const [selectedId, setSelectedId] = useState<string | null>(
     () => new URLSearchParams(window.location.search).get("e"),
   );
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
+  const [route, setRoute] = useState<Route>(() => parseRoute());
+  const [railTab, setRailTab] = useState<"watch" | "bets">("watch");
 
-  // keep selected event in the URL so views are deep-linkable
+  useEffect(() => {
+    fetchCatalog().then(setCatalog).catch((e) => setError(String(e)));
+    fetchNews().then(setNews);
+  }, []);
+
+  useEffect(() => {
+    const onHash = () => setRoute(parseRoute());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // keep selected event in the URL so map views are deep-linkable
   useEffect(() => {
     const url = new URL(window.location.href);
     if (selectedId) url.searchParams.set("e", selectedId);
     else url.searchParams.delete("e");
     window.history.replaceState(null, "", url.toString());
   }, [selectedId]);
-
-  useEffect(() => {
-    fetchCatalog().then(setCatalog).catch((e) => setError(String(e)));
-  }, []);
 
   const watchSet = useMemo(() => new Set(watchlist), [watchlist]);
 
@@ -44,12 +68,53 @@ export default function App() {
     });
   }, []);
 
-  // ── Live price refresh: watchlist + selected event, on a timer ──────────────
+  const addBet = useCallback((bet: Bet) => {
+    setBets((prev) => {
+      const next = [...prev, bet];
+      persistBets(next);
+      return next;
+    });
+    setRailTab("bets");
+  }, []);
+
+  const removeBet = useCallback((id: string) => {
+    setBets((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      persistBets(next);
+      return next;
+    });
+  }, []);
+
+  const importBetList = useCallback((incoming: Bet[]) => {
+    setBets((prev) => {
+      const have = new Set(prev.map((b) => b.id));
+      const next = [...prev, ...incoming.filter((b) => !have.has(b.id))];
+      persistBets(next);
+      return next;
+    });
+  }, []);
+
+  const betEventIds = useMemo(
+    () => new Set(bets.map((b) => b.eventId).filter(Boolean)),
+    [bets],
+  );
+
+  /** market id → market + owning event, for bet P&L lookups */
+  const marketIndex = useMemo(() => {
+    const idx = new Map<string, { market: CatalogMarket; event: CatalogEvent }>();
+    for (const ev of catalog?.events ?? [])
+      for (const m of ev.markets) idx.set(m.id, { market: m, event: ev });
+    return idx;
+  }, [catalog]);
+
+  // ── Live price refresh: watchlist + selection + bet events + open page ─────
   const liveTargets = useMemo(() => {
     const ids = new Set(watchlist);
     if (selectedId) ids.add(selectedId);
+    for (const id of betEventIds) ids.add(id);
+    if (route.page === "event" && !route.id.startsWith("group:")) ids.add(route.id);
     return [...ids];
-  }, [watchlist, selectedId]);
+  }, [watchlist, selectedId, betEventIds, route]);
   const targetsRef = useRef(liveTargets);
   targetsRef.current = liveTargets;
 
@@ -77,10 +142,9 @@ export default function App() {
     refreshLive();
     const t = window.setInterval(refreshLive, LIVE_REFRESH_MS);
     return () => window.clearInterval(t);
-    // re-arm when the target set actually changes
   }, [liveTargets.join(","), refreshLive]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
+  // ── Derived ─────────────────────────────────────────────────────────────────
   const stats = useMemo(
     () => (catalog ? catalogStats(catalog.events, live) : null),
     [catalog, live],
@@ -112,6 +176,11 @@ export default function App() {
     (Date.now() - new Date(catalog.generatedAt).getTime()) / 60000,
   );
 
+  const goEvent = (id: string) => {
+    setSelectedId(id);
+    if (route.page !== "map") window.location.hash = `#/event/${id}`;
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -122,6 +191,10 @@ export default function App() {
             snapshot {snapshotAge < 60 ? `${snapshotAge}m` : `${Math.round(snapshotAge / 60)}h`} old
             {lastLiveAt && <span className="live-dot"> · ● live</span>}
           </p>
+          <nav className="nav">
+            <a href="#/" className={route.page === "map" ? "on" : ""}>Dashboard</a>
+            <a href="#/markets" className={route.page !== "map" ? "on" : ""}>Markets</a>
+          </nav>
         </div>
         <div className="tiles">
           <div className="tile">
@@ -151,48 +224,97 @@ export default function App() {
         </div>
       </header>
 
-      <main className="layout">
-        <CatalogPanel
+      {route.page === "markets" && (
+        <MarketsPage
           catalog={catalog}
           live={live}
-          regionFilter={regionFilter}
           watchlist={watchSet}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
+          news={news}
           onToggleWatch={toggleWatch}
         />
-        <div className="center-col">
-          <WorldMap
-            events={catalog.events}
-            regions={catalog.regions}
-            selectedRegion={regionFilter}
-            onSelectRegion={setRegionFilter}
-          />
-          {selected ? (
-            <EventDetail event={selected} live={live} />
-          ) : (
-            <div className="detail-placeholder">
-              Select an event from the catalog to see its deadline ladder,
-              implied daily hazard rates, and price paths.
-            </div>
-          )}
-        </div>
-        <WatchlistPanel
-          events={watchedEvents}
+      )}
+
+      {route.page === "event" && (
+        <EventPage
+          id={route.id}
+          catalog={catalog}
           live={live}
-          lastLiveAt={lastLiveAt}
-          refreshing={refreshing}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onRemove={toggleWatch}
-          onRefresh={refreshLive}
+          news={news}
+          onAddBet={addBet}
         />
-      </main>
+      )}
+
+      {route.page === "map" && (
+        <main className="layout">
+          <CatalogPanel
+            catalog={catalog}
+            live={live}
+            regionFilter={regionFilter}
+            watchlist={watchSet}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onToggleWatch={toggleWatch}
+          />
+          <div className="center-col">
+            <WorldMap
+              events={catalog.events}
+              regions={catalog.regions}
+              countries={catalog.countries}
+              selectedRegion={regionFilter}
+              onSelectRegion={setRegionFilter}
+              focusEvent={selected}
+              watchlist={watchSet}
+              betEventIds={betEventIds}
+            />
+            {selected ? (
+              <EventDetail event={selected} live={live} onAddBet={addBet} showFullViewLink />
+            ) : (
+              <div className="detail-placeholder">
+                Select an event from the catalog to see its deadline ladder,
+                implied daily hazard rates, and price paths — the map will pan
+                to its location.
+              </div>
+            )}
+          </div>
+          <div className="rail">
+            <div className="toggle rail-tabs">
+              <button className={railTab === "watch" ? "on" : ""} onClick={() => setRailTab("watch")}>
+                ★ Watchlist
+              </button>
+              <button className={railTab === "bets" ? "on" : ""} onClick={() => setRailTab("bets")}>
+                $ Bets{bets.length ? ` (${bets.length})` : ""}
+              </button>
+            </div>
+            {railTab === "watch" ? (
+              <WatchlistPanel
+                events={watchedEvents}
+                live={live}
+                lastLiveAt={lastLiveAt}
+                refreshing={refreshing}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onRemove={toggleWatch}
+                onRefresh={refreshLive}
+              />
+            ) : (
+              <BetsPanel
+                bets={bets}
+                marketIndex={marketIndex}
+                live={live}
+                onRemove={removeBet}
+                onImport={importBetList}
+                onSelectEvent={goEvent}
+              />
+            )}
+          </div>
+        </main>
+      )}
 
       <footer className="footer">
-        Data: Polymarket Gamma + CLOB APIs · snapshot {catalog.generatedAt} ·
-        implied daily = cumulative YES% ÷ days to deadline · marginal daily =
-        Δ YES% ÷ window days · not investment advice
+        Data: Polymarket Gamma + CLOB APIs · news: whitelisted RSS
+        {news && ` (${news.sources.join(", ")})`} · snapshot {catalog.generatedAt} ·
+        implied daily = cumulative YES% ÷ days to deadline · bets stay in this browser ·
+        not investment advice
       </footer>
     </div>
   );

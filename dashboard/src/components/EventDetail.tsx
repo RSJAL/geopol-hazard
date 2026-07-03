@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CatalogEvent, LivePriceMap, PricePoint } from "../lib/types";
+import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
 import { buildLadder, fmtVolume, liveYes, deadlineLabel } from "../lib/analytics";
+import { newBetId } from "../lib/bets";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
 
@@ -9,21 +10,89 @@ const LINE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a", "#ef5350", "#ab47bc", "#26
 interface Props {
   event: CatalogEvent;
   live: LivePriceMap;
+  onAddBet: (bet: Bet) => void;
+  showFullViewLink?: boolean;
 }
 
 type RateMode = "daily" | "total";
 
-export default function EventDetail({ event, live }: Props) {
+function BetForm({
+  event, market, label, live, onAddBet, onClose,
+}: {
+  event: CatalogEvent;
+  market: CatalogMarket;
+  label: string;
+  live: LivePriceMap;
+  onAddBet: (bet: Bet) => void;
+  onClose: () => void;
+}) {
+  const yes = liveYes(market, live);
+  const [side, setSide] = useState<"YES" | "NO">("YES");
+  const [shares, setShares] = useState("100");
+  const [price, setPrice] = useState(yes.toFixed(1));
+
+  useEffect(() => {
+    setPrice((side === "YES" ? yes : 100 - yes).toFixed(1));
+  }, [side, yes]);
+
+  const nShares = parseFloat(shares) || 0;
+  const nPrice = parseFloat(price) || 0;
+  const cost = (nShares * nPrice) / 100;
+
+  return (
+    <div className="bet-form" onClick={(e) => e.stopPropagation()}>
+      <span className="bet-form-label">{label}</span>
+      <select value={side} onChange={(e) => setSide(e.target.value as "YES" | "NO")}>
+        <option value="YES">YES</option>
+        <option value="NO">NO</option>
+      </select>
+      <input
+        type="number" min="1" step="1" value={shares}
+        onChange={(e) => setShares(e.target.value)} placeholder="shares"
+      />
+      <span className="muted">×</span>
+      <input
+        type="number" min="0.1" max="99.9" step="0.1" value={price}
+        onChange={(e) => setPrice(e.target.value)} placeholder="entry ¢"
+      />
+      <span className="muted">¢ = ${cost.toFixed(2)}</span>
+      <button
+        className="btn btn-primary"
+        disabled={nShares <= 0 || nPrice <= 0 || nPrice >= 100}
+        onClick={() => {
+          onAddBet({
+            id: newBetId(),
+            eventId: event.id.startsWith("group:") ? "" : event.id,
+            marketId: market.id,
+            label: `${event.title.slice(0, 40)} — ${label}`,
+            side,
+            shares: nShares,
+            entryPrice: nPrice,
+            openedAt: new Date().toISOString(),
+          });
+          onClose();
+        }}
+      >
+        save bet
+      </button>
+      <button className="btn" onClick={onClose}>✕</button>
+    </div>
+  );
+}
+
+export default function EventDetail({ event, live, onAddBet, showFullViewLink }: Props) {
   const [mode, setMode] = useState<RateMode>("daily");
   const [interval, setInterval_] = useState<HistoryInterval>("1m");
   const [series, setSeries] = useState<Series[] | null>(null);
+  const [betMarketId, setBetMarketId] = useState<string | null>(null);
+
+  useEffect(() => setBetMarketId(null), [event.id]);
 
   const ladder = useMemo(
     () => (event.type === "horizon" ? buildLadder(event, live) : []),
     [event, live],
   );
 
-  // markets whose price paths we chart (ladder rungs, or top buckets, or the binary)
   const chartMarkets = useMemo(() => {
     const ms =
       event.type === "horizon"
@@ -57,6 +126,19 @@ export default function EventDetail({ event, live }: Props) {
   const maxImpl = Math.max(...ladder.map((r) => r.implDaily), 1e-9);
   const maxYes = Math.max(...ladder.map((r) => r.yes), 1e-9);
 
+  const betBtn = (m: CatalogMarket) => (
+    <button
+      className="bet-btn"
+      title="Log a bet on this market"
+      onClick={(e) => {
+        e.stopPropagation();
+        setBetMarketId(betMarketId === m.id ? null : m.id);
+      }}
+    >
+      $
+    </button>
+  );
+
   return (
     <div className="detail-panel">
       <div className="detail-head">
@@ -67,10 +149,20 @@ export default function EventDetail({ event, live }: Props) {
             {event.region && <> · {event.region}</>}
             {" · "}{fmtVolume(event.volume)} total vol
             {" · "}{fmtVolume(event.volume24h)} 24h
-            {" · "}
-            <a href={`https://polymarket.com/event/${event.slug}`} target="_blank" rel="noreferrer">
-              polymarket ↗
-            </a>
+            {!event.id.startsWith("group:") && (
+              <>
+                {" · "}
+                <a href={`https://polymarket.com/event/${event.slug}`} target="_blank" rel="noreferrer">
+                  polymarket ↗
+                </a>
+              </>
+            )}
+            {showFullViewLink && (
+              <>
+                {" · "}
+                <a href={`#/event/${event.id}`}>full view + news ↗</a>
+              </>
+            )}
           </div>
         </div>
         {event.type === "horizon" && (
@@ -99,13 +191,11 @@ export default function EventDetail({ event, live }: Props) {
               const barVal = mode === "daily" ? r.implDaily / maxImpl : r.yes / maxYes;
               const implTxt = mode === "daily" ? `${r.implDaily.toFixed(3)}%` : `${r.yes.toFixed(1)}%`;
               const margTxt =
-                i === 0
-                  ? "—"
-                  : mode === "daily"
-                    ? `${r.margDaily.toFixed(3)}%`
-                    : `${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}%`;
+                i === 0 ? "—"
+                : mode === "daily" ? `${r.margDaily.toFixed(3)}%`
+                : `${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}%`;
               const margPeak = i > 0 && peakMarg > 0 && Math.abs(r.margDaily - peakMarg) < 1e-9;
-              return (
+              return [
                 <tr key={r.endDate}>
                   <td>{r.label}</td>
                   <td className="num">{r.yes.toFixed(1)}%</td>
@@ -123,9 +213,20 @@ export default function EventDetail({ event, live }: Props) {
                     {r.isInversion && <span className="badge b-inv">INV</span>}
                     {r.isCheap && <span className="badge b-cheap">CHEAP</span>}
                     {r.isNegativeMarginal && <span className="badge b-neg" title="Longer deadline priced below shorter — inconsistent pricing">NEG</span>}
+                    {betBtn(r.market)}
                   </td>
-                </tr>
-              );
+                </tr>,
+                betMarketId === r.market.id && (
+                  <tr key={`${r.endDate}-bet`} className="bet-row">
+                    <td colSpan={7}>
+                      <BetForm
+                        event={event} market={r.market} label={r.label} live={live}
+                        onAddBet={onAddBet} onClose={() => setBetMarketId(null)}
+                      />
+                    </td>
+                  </tr>
+                ),
+              ];
             })}
           </tbody>
         </table>
@@ -138,13 +239,23 @@ export default function EventDetail({ event, live }: Props) {
             .slice(0, 12)
             .map((m) => {
               const yes = liveYes(m, live);
+              const label = m.groupItemTitle || m.question;
               return (
-                <div className="bucket-row" key={m.id}>
-                  <span className="bucket-label">{m.groupItemTitle || m.question}</span>
-                  <div className="bucket-bar-wrap">
-                    <div className="bucket-bar" style={{ width: `${Math.max(1, yes)}%` }} />
+                <div key={m.id}>
+                  <div className="bucket-row">
+                    <span className="bucket-label">{label}</span>
+                    <div className="bucket-bar-wrap">
+                      <div className="bucket-bar" style={{ width: `${Math.max(1, yes)}%` }} />
+                    </div>
+                    <span className="bucket-val">{yes.toFixed(1)}%</span>
+                    {betBtn(m)}
                   </div>
-                  <span className="bucket-val">{yes.toFixed(1)}%</span>
+                  {betMarketId === m.id && (
+                    <BetForm
+                      event={event} market={m} label={label.slice(0, 30)} live={live}
+                      onAddBet={onAddBet} onClose={() => setBetMarketId(null)}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -156,16 +267,26 @@ export default function EventDetail({ event, live }: Props) {
           {event.markets.map((m) => {
             const yes = liveYes(m, live);
             const chg = (live.get(m.id)?.change24h ?? m.change24h ?? 0) * 100;
+            const label = deadlineLabel(m.endDate);
             return (
-              <div key={m.id} className="binary-row">
-                <span className="binary-yes">{yes.toFixed(1)}%</span>
-                <span className="muted"> YES · {deadlineLabel(m.endDate)}</span>
-                {chg !== 0 && (
-                  <span className={chg > 0 ? "up" : "down"}>
-                    {" "}{chg > 0 ? "▲" : "▼"}{Math.abs(chg).toFixed(1)} (24h)
-                  </span>
+              <div key={m.id}>
+                <div className="binary-row">
+                  <span className="binary-yes">{yes.toFixed(1)}%</span>
+                  <span className="muted"> YES · {label}</span>
+                  {chg !== 0 && (
+                    <span className={chg > 0 ? "up" : "down"}>
+                      {" "}{chg > 0 ? "▲" : "▼"}{Math.abs(chg).toFixed(1)} (24h)
+                    </span>
+                  )}
+                  <span className="muted"> · spread {(m.spread ?? 0).toFixed(3)} · liq {fmtVolume(m.liquidity)}</span>
+                  {betBtn(m)}
+                </div>
+                {betMarketId === m.id && (
+                  <BetForm
+                    event={event} market={m} label={label} live={live}
+                    onAddBet={onAddBet} onClose={() => setBetMarketId(null)}
+                  />
                 )}
-                <span className="muted"> · spread {(m.spread ?? 0).toFixed(3)} · liq {fmtVolume(m.liquidity)}</span>
               </div>
             );
           })}

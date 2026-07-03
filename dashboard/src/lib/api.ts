@@ -1,4 +1,4 @@
-import type { Catalog, LivePrice, PricePoint } from "./types";
+import type { Catalog, LivePrice, NewsData, PricePoint } from "./types";
 
 const GAMMA = "https://gamma-api.polymarket.com";
 const CLOB = "https://clob.polymarket.com";
@@ -7,6 +7,16 @@ export async function fetchCatalog(): Promise<Catalog> {
   const res = await fetch("data/catalog.json", { cache: "no-cache" });
   if (!res.ok) throw new Error(`catalog fetch failed: ${res.status}`);
   return res.json();
+}
+
+export async function fetchNews(): Promise<NewsData | null> {
+  try {
+    const res = await fetch("data/news.json", { cache: "no-cache" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null; // news is optional — dashboard works without it
+  }
 }
 
 function parseYes(outcomePrices: unknown): number | null {

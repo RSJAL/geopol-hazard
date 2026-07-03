@@ -273,6 +273,144 @@ a:hover { text-decoration: underline; }
   margin-top: 14px; padding: 8px 0 4px; border-top: 1px solid var(--grid);
 }
 
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+.nav { display: flex; gap: 4px; margin-top: 6px; }
+.nav a {
+  font-size: 0.72rem; padding: 3px 12px; border-radius: 6px;
+  color: var(--muted); border: 1px solid transparent;
+}
+.nav a:hover { text-decoration: none; color: var(--text); }
+.nav a.on { color: var(--accent); border-color: var(--grid); background: var(--head); }
+
+/* ── Map v2 ──────────────────────────────────────────────────────────────── */
+.world-map { touch-action: none; cursor: grab; }
+.world-map:active { cursor: grabbing; }
+.map-disputed {
+  fill: none; stroke: var(--inv); stroke-dasharray: 4 3; opacity: 0.8;
+}
+.disputed-key { color: var(--inv); letter-spacing: -1px; }
+.focus-halo {
+  fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.9;
+  animation: halo 1.6s ease-out infinite;
+}
+@keyframes halo {
+  0% { opacity: 0.9; }
+  70% { opacity: 0.15; }
+  100% { opacity: 0.9; }
+}
+.bubble-bets { fill: none; stroke: #ffd54f; opacity: 0.9; }
+.map-filter { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* ── Chart interactivity ─────────────────────────────────────────────────── */
+.price-chart { position: relative; }
+.crosshair { stroke: var(--muted); stroke-width: 0.7; stroke-dasharray: 3 3; }
+.chart-tip {
+  position: absolute; top: 6px; background: var(--head);
+  border: 1px solid var(--grid); border-radius: 6px; padding: 6px 9px;
+  font-size: 0.66rem; pointer-events: none; z-index: 5; white-space: nowrap;
+}
+.tip-when { color: var(--muted); margin-bottom: 3px; }
+.tip-row b { margin-left: 4px; }
+
+/* ── Bets ────────────────────────────────────────────────────────────────── */
+.bet-btn {
+  background: none; border: 1px solid var(--grid); color: var(--muted);
+  border-radius: 4px; font-size: 0.66rem; font-weight: 700;
+  padding: 0 5px; margin-left: 5px; cursor: pointer; line-height: 1.4;
+}
+.bet-btn:hover { border-color: #ffd54f; color: #ffd54f; }
+.bet-form {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  background: var(--head); border: 1px solid var(--grid); border-radius: 6px;
+  padding: 7px 10px; margin: 4px 0; font-size: 0.74rem;
+}
+.bet-form-label { color: var(--muted); font-size: 0.68rem; }
+.bet-form select, .bet-form input {
+  background: var(--panel); color: var(--text); border: 1px solid var(--grid);
+  border-radius: 4px; padding: 4px 6px; font-size: 0.74rem; outline: none;
+}
+.bet-form input { width: 70px; }
+.btn-primary { background: var(--accent); color: var(--head); font-weight: 700; flex: initial; }
+.bet-row td { border-bottom: none !important; padding: 0 4px !important; }
+
+.rail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rail-tabs { align-self: stretch; }
+.rail-tabs button { flex: 1; }
+.bets-panel {
+  background: var(--panel); border: 1px solid var(--grid); border-radius: 10px;
+  padding: 12px; max-height: calc(100vh - 190px);
+  display: flex; flex-direction: column;
+}
+.pnl-summary {
+  display: flex; justify-content: space-between; gap: 8px;
+  background: var(--head); border: 1px solid var(--grid); border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 8px; text-align: center;
+}
+.pnl-num { font-size: 0.95rem; font-weight: 700; margin-top: 2px; }
+.bet-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 6px; border-radius: 6px; cursor: pointer;
+  border: 1px solid transparent;
+}
+.bet-item:hover { background: var(--panel-2); }
+
+/* ── News ────────────────────────────────────────────────────────────────── */
+.news-list { display: flex; flex-direction: column; }
+.news-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 6px; border-radius: 6px; color: var(--text);
+  border-bottom: 1px solid var(--grid);
+}
+.news-row:hover { background: var(--panel-2); text-decoration: none; }
+.news-main { flex: 1; min-width: 0; }
+.news-title { font-size: 0.76rem; line-height: 1.3; }
+.news-meta { font-size: 0.64rem; color: var(--muted); margin-top: 2px; }
+.sent {
+  font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.sent-hot { background: #2d1515; color: var(--spike); }
+.sent-cool { background: #102d33; color: var(--accent); }
+.sent-neutral { background: var(--head); color: var(--muted); }
+.sentiment-chart { margin-bottom: 10px; }
+.sentiment-chart svg { width: 100%; height: auto; }
+.sent-bar-hot { fill: var(--spike); opacity: 0.75; }
+.sent-bar-cool { fill: var(--accent); opacity: 0.75; }
+
+/* ── Markets page ────────────────────────────────────────────────────────── */
+.markets-page { min-height: 60vh; }
+.markets-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px; padding: 0 2px;
+}
+.markets-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+  gap: 12px;
+}
+.group-card {
+  background: var(--panel); border: 1px solid var(--grid); border-radius: 10px;
+  padding: 12px;
+}
+.group-head { margin-bottom: 6px; }
+.group-title-wrap { display: flex; align-items: center; gap: 6px; }
+.group-title { font-weight: 700; font-size: 0.88rem; flex: 1; }
+.group-meta { font-size: 0.66rem; color: var(--muted); margin: 2px 0 0 26px; }
+.group-tabs { margin: 6px 0 8px; flex-wrap: wrap; }
+.ladder.mini td, .ladder.mini th { padding: 4px 6px; font-size: 0.72rem; }
+.group-foot { margin-top: 8px; font-size: 0.7rem; text-align: right; }
+
+/* ── Event drill-down page ───────────────────────────────────────────────── */
+.event-page { min-height: 60vh; }
+.back-link { font-size: 0.74rem; display: inline-block; margin-bottom: 8px; }
+.event-page-grid {
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
+  gap: 12px; align-items: start;
+}
+@media (max-width: 1100px) {
+  .event-page-grid { grid-template-columns: 1fr; }
+}
+.event-page-side .news-list { max-height: 60vh; overflow-y: auto; }
+
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--head); }

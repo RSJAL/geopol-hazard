@@ -103,6 +103,93 @@ REGIONS = [
 ]
 
 
+# ── Country inference (for zoomed-in map bubbles) ─────────────────────────────
+# country_id: ISO-ish slug; (name, lat, lon, keyword regex over title+tags)
+COUNTRIES = [
+    ("TWN", "Taiwan",        23.7,  121.0, r"\btaiwan|taipei\b"),
+    ("UKR", "Ukraine",       49.0,   32.0, r"\bukrain|kyiv|zelensk|donbas|donetsk|crimea|kostyantynivka|kupiansk|lyman|kharkiv|sumy|zaporizh"),
+    ("RUS", "Russia",        58.0,   60.0, r"\brussia|putin|moscow|kremlin\b"),
+    ("IRN", "Iran",          32.4,   53.7, r"\biran|khamenei|pahlavi|tehran\b"),
+    ("ISR", "Israel",        31.4,   35.0, r"\bisrael|netanyahu|idf\b"),
+    ("LBN", "Lebanon",       33.9,   35.9, r"\blebanon|hezbollah|litani|beirut\b"),
+    ("SYR", "Syria",         35.0,   38.5, r"\bsyria|damascus|al-sharaa\b"),
+    ("CHN", "China",         35.0,  105.0, r"\bchina|chinese|xi jinping|beijing\b"),
+    ("PRK", "North Korea",   40.0,  127.0, r"\bnorth korea|kim jong|dprk|pyongyang\b"),
+    ("KOR", "South Korea",   36.5,  128.0, r"\bsouth korea|seoul\b"),
+    ("IND", "India",         22.0,   79.0, r"\bindia|modi|delhi\b"),
+    ("PAK", "Pakistan",      30.0,   69.5, r"\bpakistan|islamabad\b"),
+    ("JPN", "Japan",         36.5,  138.5, r"\bjapan|tokyo\b"),
+    ("PHL", "Philippines",   12.5,  122.5, r"\bphilippin|manila\b"),
+    ("AUS", "Australia",    -25.0,  134.0, r"\baustralia|canberra|albanese\b"),
+    ("SAU", "Saudi Arabia",  24.0,   45.0, r"\bsaudi|riyadh|mbs\b"),
+    ("YEM", "Yemen",         15.5,   47.5, r"\byemen|houthi|sanaa\b"),
+    ("IRQ", "Iraq",          33.0,   43.5, r"\biraq|baghdad\b"),
+    ("QAT", "Qatar",         25.3,   51.2, r"\bqatar|doha\b"),
+    ("ARE", "UAE",           24.0,   54.0, r"\buae\b|\bemirates|abu dhabi|dubai\b"),
+    ("EGY", "Egypt",         26.5,   30.0, r"\begypt|cairo|sisi\b"),
+    ("TUR", "Turkey",        39.0,   35.0, r"\bturkey|türkiye|erdogan|ankara\b"),
+    ("VEN", "Venezuela",      7.5,  -66.0, r"\bvenezuela|maduro|caracas|delcy\b"),
+    ("CUB", "Cuba",          21.5,  -79.5, r"\bcuba|havana|diaz-canel|castro\b"),
+    ("BRA", "Brazil",       -10.5,  -52.5, r"\bbrazil|lula|brasilia\b"),
+    ("MEX", "Mexico",        23.5, -102.5, r"\bmexico|sheinbaum\b"),
+    ("COL", "Colombia",       4.0,  -73.0, r"\bcolombia|bogota|petro\b"),
+    ("ARG", "Argentina",    -35.0,  -65.0, r"\bargentina|milei\b"),
+    ("USA", "United States", 39.5,  -98.5, r"\bunited states\b|\bu\.?s\.?a?\b|\bwhite house|pentagon\b"),
+    ("CAN", "Canada",        58.0, -103.0, r"\bcanada|ottawa|carney\b"),
+    ("GRL", "Greenland",     72.0,  -41.0, r"\bgreenland|nuuk\b"),
+    ("PAN", "Panama",         8.5,  -80.5, r"\bpanama\b"),
+    ("GBR", "United Kingdom", 53.5,  -2.5, r"\bbritain|british|\buk\b|united kingdom|starmer|london\b"),
+    ("FRA", "France",        46.5,    2.5, r"\bfrance|french|macron|paris\b"),
+    ("DEU", "Germany",       51.0,   10.0, r"\bgerman|merz|berlin\b"),
+    ("POL", "Poland",        52.0,   19.5, r"\bpoland|warsaw|tusk\b"),
+    ("MDA", "Moldova",       47.0,   28.5, r"\bmoldova|transnistria\b"),
+    ("BLR", "Belarus",       53.5,   28.0, r"\bbelarus|lukashenko\b"),
+    ("ARM", "Armenia",       40.3,   45.0, r"\barmenia|yerevan\b"),
+    ("AZE", "Azerbaijan",    40.3,   47.7, r"\bazerbaijan|baku|aliyev\b"),
+    ("GEO", "Georgia",       42.0,   43.5, r"\bgeorgia(n)? (govern|parliament|protest)|tbilisi\b"),
+    ("ALB", "Albania",       41.0,   20.0, r"\balbania|edi rama|tirana\b"),
+    ("SRB", "Serbia",        44.0,   21.0, r"\bserbia|vucic|belgrade|kosovo\b"),
+    ("MAR", "Morocco",       32.0,   -6.0, r"\bmorocco|rabat|akhannouch\b"),
+    ("NGA", "Nigeria",        9.5,    8.0, r"\bnigeria|abuja|tinubu\b"),
+    ("ETH", "Ethiopia",       9.0,   39.5, r"\bethiopia|addis ababa|abiy\b"),
+    ("SDN", "Sudan",         15.5,   30.0, r"\bsudan|khartoum|rsf\b"),
+    ("LBY", "Libya",         27.0,   17.0, r"\blibya|tripoli|haftar\b"),
+    ("AFG", "Afghanistan",   33.8,   66.0, r"\bafghan|taliban|kabul\b"),
+]
+
+_WS_RE = re.compile(
+    r"\s+(by|before|on or before|prior to|in|at|during|through|until)?\s*"
+    r"((january|february|march|april|may|june|july|august|september|october|"
+    r"november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s*"
+    r"\d{0,2},?\s*)?(20\d\d)?\s*[?.!…’]*\s*$",
+    re.IGNORECASE,
+)
+
+
+def group_key(title: str) -> str:
+    """Normalize a title to a grouping stem so 'X by July 31?', 'X before
+    2027?', and 'X by...?' cluster together."""
+    t = title.strip().lower()
+    t = re.sub(r"\bby\s*(\.\.\.|…)\s*\??$", "", t)      # 'by...?'
+    t = re.sub(r"\bbefore 20\d\d\s*\??$", "", t)
+    t = re.sub(r"\bin 20\d\d\s*\??$", "", t)
+    t = re.sub(r"\bby (end of )?(the year|20\d\d)\s*\??$", "", t)
+    t = _WS_RE.sub("", t)                                   # 'by July 31?' etc.
+    t = re.sub(r"[^a-z0-9 ]+", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
+
+
+def infer_countries(tag_slugs: list[str], title: str) -> list[str]:
+    """Country ids matched from the title/tags, most-specific signals only."""
+    text = title.lower() + " " + " ".join(tag_slugs)
+    out = []
+    for cid, _, _, _, pattern in COUNTRIES:
+        if re.search(pattern, text):
+            out.append(cid)
+    return out
+
+
 def infer_category(tag_slugs: list[str]) -> str:
     tagset = set(tag_slugs)
     for slug, cat in TAG_TO_CATEGORY:
@@ -249,6 +336,8 @@ def build_catalog(tags: list[str], min_vol: float) -> dict:
                 "title":     title,
                 "category":  infer_category(tag_slugs),
                 "region":    infer_region(tag_slugs, title),
+                "countries": infer_countries(tag_slugs, title),
+                "groupKey":  group_key(title),
                 "type":      classify(markets),
                 "tags":      [s for s in tag_slugs if s and s != "all"],
                 "volume":    round(float(e.get("volume") or 0)),
@@ -267,6 +356,10 @@ def build_catalog(tags: list[str], min_vol: float) -> dict:
         "regions": [
             {"id": rid, "name": name, "lat": lat, "lon": lon}
             for rid, name, lat, lon, _, _ in REGIONS
+        ],
+        "countries": [
+            {"id": cid, "name": name, "lat": lat, "lon": lon}
+            for cid, name, lat, lon, _ in COUNTRIES
         ],
         "events": events_out,
     }
