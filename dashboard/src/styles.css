@@ -142,7 +142,10 @@ a:hover { text-decoration: underline; }
 .map-panel { padding: 8px; }
 .world-map { width: 100%; height: auto; display: block; }
 .map-sphere { fill: var(--head); }
-.map-country { fill: #232638; stroke: #4a5170; stroke-width: 0.5; }
+.map-country {
+  fill: #232638; stroke: #4a5170; stroke-width: 0.5;
+  shape-rendering: geometricPrecision; stroke-linejoin: round;
+}
 
 .map-bubble { cursor: pointer; }
 .bubble-fill { fill: var(--accent); opacity: 0.22; }
@@ -287,6 +290,7 @@ a:hover { text-decoration: underline; }
 .world-map:active { cursor: grabbing; }
 .map-disputed {
   fill: none; stroke: var(--inv); stroke-dasharray: 4 3; opacity: 0.8;
+  shape-rendering: geometricPrecision; stroke-linecap: round;
 }
 .disputed-key { color: var(--inv); letter-spacing: -1px; }
 .focus-halo {
@@ -376,6 +380,19 @@ a:hover { text-decoration: underline; }
 .sentiment-chart svg { width: 100%; height: auto; }
 .sent-bar-hot { fill: var(--spike); opacity: 0.75; }
 .sent-bar-cool { fill: var(--accent); opacity: 0.75; }
+.sent-day { cursor: pointer; }
+.sent-day:hover .sent-bar-hot, .sent-day:hover .sent-bar-cool { opacity: 1; }
+.sent-day-sel {
+  fill: var(--accent); opacity: 0.08;
+  stroke: var(--accent); stroke-width: 1; rx: 3;
+}
+
+/* ── Hazard PMF chart ────────────────────────────────────────────────────── */
+.pmf-chart svg { width: 100%; height: auto; display: block; }
+.pmf-bar { fill: var(--accent); opacity: 0.8; }
+.pmf-bar-peak { fill: var(--spike); opacity: 0.85; }
+.pmf-bar-neg { fill: var(--spike); opacity: 0.55; }
+.zero-line { stroke: var(--muted); stroke-width: 0.8; stroke-dasharray: 4 3; }
 
 /* ── Markets page ────────────────────────────────────────────────────────── */
 .markets-page { min-height: 60vh; }
@@ -393,18 +410,42 @@ a:hover { text-decoration: underline; }
 }
 .group-card:hover { border-color: var(--accent); }
 .markets-tools { display: flex; align-items: center; gap: 12px; }
-.watch-add { width: 260px; margin-bottom: 0 !important; }
+.watch-add { width: 300px; margin-bottom: 0 !important; }
+
+/* add-to-watchlist combobox */
+.combo { position: relative; }
+.combo-list {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
+  box-shadow: 0 8px 24px #00000088; overflow: hidden; padding: 4px;
+}
+.combo-item {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  padding: 7px 9px; border-radius: 5px; cursor: pointer; font-size: 0.76rem;
+}
+.combo-item.hl { background: var(--panel-2); }
+.combo-title {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.combo-meta { color: var(--muted); font-size: 0.66rem; white-space: nowrap; }
 .group-head { margin-bottom: 6px; }
 .group-title-wrap { display: flex; align-items: center; gap: 6px; }
 .group-title { font-weight: 700; font-size: 0.88rem; flex: 1; }
 .group-meta { font-size: 0.66rem; color: var(--muted); margin: 2px 0 0 26px; }
 .group-tabs { margin: 6px 0 8px; flex-wrap: wrap; }
 .ladder.mini td, .ladder.mini th { padding: 4px 6px; font-size: 0.72rem; }
-.group-foot { margin-top: 8px; font-size: 0.7rem; text-align: right; }
 
 /* ── Event drill-down page ───────────────────────────────────────────────── */
 .event-page { min-height: 60vh; }
-.back-link { font-size: 0.74rem; display: inline-block; margin-bottom: 8px; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.74rem; margin-bottom: 10px; padding: 5px 14px;
+  background: var(--head); border: 1px solid var(--grid); border-radius: 6px;
+  color: var(--muted);
+}
+.back-link:hover {
+  color: var(--accent); border-color: var(--accent); text-decoration: none;
+}
 .event-page-grid {
   display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
   gap: 12px; align-items: start;

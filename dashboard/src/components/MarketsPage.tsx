@@ -11,6 +11,80 @@ interface Props {
   onToggleWatch: (id: string) => void;
 }
 
+/** Combobox for adding whole market groups to the watchlist. */
+function AddToWatchlist({
+  groups, watchlist, onToggleWatch,
+}: {
+  groups: EventGroup[];
+  watchlist: Set<string>;
+  onToggleWatch: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [hl, setHl] = useState(0);
+
+  const candidates = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return groups
+      .filter((g) => !g.events.some((e) => watchlist.has(e.id)))
+      .filter((g) => !q || g.title.toLowerCase().includes(q))
+      .slice(0, 10);
+  }, [groups, watchlist, query]);
+
+  const add = (g: EventGroup) => {
+    g.events.forEach((e) => { if (!watchlist.has(e.id)) onToggleWatch(e.id); });
+    setQuery("");
+    setOpen(false);
+    setHl(0);
+  };
+
+  return (
+    <div className="combo">
+      <input
+        className="search watch-add"
+        placeholder="＋ add market to watchlist…"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); setHl(0); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setOpen(true);
+            setHl((h) => Math.min(h + 1, candidates.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setHl((h) => Math.max(h - 1, 0));
+          } else if (e.key === "Enter" && open && candidates[hl]) {
+            add(candidates[hl]);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+      />
+      {open && candidates.length > 0 && (
+        <div className="combo-list">
+          {candidates.map((g, i) => (
+            <div
+              key={g.key}
+              className={`combo-item${i === hl ? " hl" : ""}`}
+              // mousedown (not click) so the input's blur doesn't close us first
+              onMouseDown={(e) => { e.preventDefault(); add(g); }}
+              onMouseEnter={() => setHl(i)}
+            >
+              <span className="combo-title">{g.title}</span>
+              <span className="combo-meta">
+                {fmtVolume(g.events.reduce((s, e) => s + e.volume, 0))}
+                {g.events.length > 1 && ` · ${g.events.length} horizons`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
   if (ev.type === "horizon") {
     const rows = buildLadder(ev, live);
@@ -20,20 +94,17 @@ function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
         <thead>
           <tr>
             <th>Deadline</th><th className="num">YES</th>
-            <th className="num">Impl/d</th><th className="num">Marg/d</th>
+            <th className="num">Impl/d</th>
             <th className="viz"></th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
+          {rows.map((r) => (
             <tr key={r.endDate}>
               <td>{r.label}</td>
               <td className="num">{r.yes.toFixed(1)}%</td>
               <td className={`num${r.isPeak ? " peak" : r.isInversion ? " inv" : ""}`}>
                 {r.implDaily.toFixed(3)}%
-              </td>
-              <td className={`num${r.isCheap ? " cheap" : ""}`}>
-                {i === 0 ? "—" : `${r.margDaily.toFixed(3)}%`}
               </td>
               <td className="viz">
                 <div
@@ -136,28 +207,16 @@ function GroupCard({
       )}
 
       <MiniLadder ev={current} live={live} />
-
-      <div className="group-foot">
-        <a href={`#/event/${current.id}`}>drill down: news · sentiment · price paths →</a>
-      </div>
     </div>
   );
 }
 
 export default function MarketsPage({ catalog, live, watchlist, news, onToggleWatch }: Props) {
   const [showAll, setShowAll] = useState(false);
-  const [addQuery, setAddQuery] = useState("");
 
   const groups = useMemo(() => buildGroups(catalog.events), [catalog]);
   const tracked = groups.filter((g) => g.events.some((e) => watchlist.has(e.id)));
   const shown = showAll || !tracked.length ? groups.slice(0, 30) : tracked;
-
-  const addFromQuery = (q: string) => {
-    const g = groups.find((x) => x.title.toLowerCase() === q.trim().toLowerCase());
-    if (!g) return;
-    g.events.forEach((e) => { if (!watchlist.has(e.id)) onToggleWatch(e.id); });
-    setAddQuery("");
-  };
 
   return (
     <div className="markets-page">
@@ -171,20 +230,7 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
           </span>
         </div>
         <div className="markets-tools">
-          <input
-            className="search watch-add"
-            list="all-groups"
-            placeholder="＋ add market to watchlist…"
-            value={addQuery}
-            onChange={(e) => setAddQuery(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") addFromQuery(addQuery); }}
-            onBlur={() => addQuery && addFromQuery(addQuery)}
-          />
-          <datalist id="all-groups">
-            {groups
-              .filter((g) => !g.events.some((e) => watchlist.has(e.id)))
-              .map((g) => <option key={g.key} value={g.title} />)}
-          </datalist>
+          <AddToWatchlist groups={groups} watchlist={watchlist} onToggleWatch={onToggleWatch} />
           {tracked.length > 0 && (
             <label className="check">
               <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />

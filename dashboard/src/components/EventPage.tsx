@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Bet, Catalog, CatalogEvent, LivePriceMap, NewsData } from "../lib/types";
 import { buildGroups } from "../lib/grouping";
 import EventDetail from "./EventDetail";
@@ -13,6 +13,8 @@ interface Props {
 }
 
 export default function EventPage({ id, catalog, live, news, onAddBet }: Props) {
+  const [newsDay, setNewsDay] = useState<string | null>(null);
+  useEffect(() => setNewsDay(null), [id]);
   const { event, memberIds } = useMemo((): {
     event: CatalogEvent | null;
     memberIds: Set<string>;
@@ -40,6 +42,14 @@ export default function EventPage({ id, catalog, live, news, onAddBet }: Props) 
     return [...direct, ...regional];
   }, [news, event, memberIds]);
 
+  const dayArticles = useMemo(
+    () =>
+      newsDay
+        ? articles.filter((a) => a.publishedAt?.slice(0, 10) === newsDay)
+        : articles,
+    [articles, newsDay],
+  );
+
   if (!event) {
     return (
       <div className="detail-placeholder">
@@ -51,7 +61,7 @@ export default function EventPage({ id, catalog, live, news, onAddBet }: Props) 
 
   return (
     <div className="event-page">
-      <a className="back-link" href="#/markets">← markets</a>
+      <a className="back-link" href="#/markets">← Markets</a>
       <div className="event-page-grid">
         <div className="event-page-main">
           <EventDetail event={event} live={live} onAddBet={onAddBet} />
@@ -61,12 +71,20 @@ export default function EventPage({ id, catalog, live, news, onAddBet }: Props) 
             <div className="panel-head">
               <span className="panel-title">📰 News</span>
               <span className="panel-sub">
-                {articles.length} articles
-                {news && ` · feed ${new Date(news.generatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+                {newsDay ? (
+                  <button className="chip chip-active" onClick={() => setNewsDay(null)}>
+                    ✕ {newsDay} · {dayArticles.length} article{dayArticles.length !== 1 ? "s" : ""}
+                  </button>
+                ) : (
+                  <>
+                    {articles.length} articles
+                    {news && ` · feed ${new Date(news.generatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+                  </>
+                )}
               </span>
             </div>
-            <SentimentChart articles={articles} />
-            <NewsFeed articles={articles} limit={25} />
+            <SentimentChart articles={articles} selectedDay={newsDay} onSelectDay={setNewsDay} />
+            <NewsFeed articles={dayArticles} limit={newsDay ? 100 : 25} />
           </div>
         </div>
       </div>

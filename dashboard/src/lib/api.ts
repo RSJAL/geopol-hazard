@@ -43,24 +43,34 @@ export async function fetchLivePrices(
   const out = new Map<string, LivePrice>();
   if (!eventIds.length) return out;
 
-  const params = new URLSearchParams();
-  for (const id of eventIds) params.append("id", id);
-  params.set("limit", "100");
+  // the keyset `id` filter returns at most `limit` (100) events per call
+  const chunks: string[][] = [];
+  for (let i = 0; i < eventIds.length; i += 100)
+    chunks.push(eventIds.slice(i, i + 100));
 
-  const res = await fetch(`${GAMMA}/events/keyset?${params}`);
-  if (!res.ok) throw new Error(`live price fetch failed: ${res.status}`);
-  const body = await res.json();
+  const bodies = await Promise.all(
+    chunks.map(async (ids) => {
+      const params = new URLSearchParams();
+      for (const id of ids) params.append("id", id);
+      params.set("limit", "100");
+      const res = await fetch(`${GAMMA}/events/keyset?${params}`);
+      if (!res.ok) throw new Error(`live price fetch failed: ${res.status}`);
+      return res.json();
+    }),
+  );
   const now = Date.now();
 
-  for (const ev of body.events ?? []) {
-    for (const m of ev.markets ?? []) {
-      const yes = parseYes(m.outcomePrices);
-      if (yes === null) continue;
-      out.set(String(m.id), {
-        yes,
-        change24h: m.oneDayPriceChange ?? null,
-        fetchedAt: now,
-      });
+  for (const body of bodies) {
+    for (const ev of body.events ?? []) {
+      for (const m of ev.markets ?? []) {
+        const yes = parseYes(m.outcomePrices);
+        if (yes === null) continue;
+        out.set(String(m.id), {
+          yes,
+          change24h: m.oneDayPriceChange ?? null,
+          fetchedAt: now,
+        });
+      }
     }
   }
   return out;

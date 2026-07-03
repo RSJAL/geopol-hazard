@@ -68,12 +68,26 @@ export function importBets(file: File): Promise<Bet[]> {
   return file.text().then((txt) => {
     const arr = JSON.parse(txt);
     if (!Array.isArray(arr)) throw new Error("not a bet list");
-    return arr.filter(
-      (b): b is Bet =>
-        typeof b?.marketId === "string" &&
-        (b.side === "YES" || b.side === "NO") &&
-        typeof b.shares === "number" &&
-        typeof b.entryPrice === "number",
-    );
+    return arr
+      .filter(
+        (b) =>
+          typeof b?.marketId === "string" &&
+          (b.side === "YES" || b.side === "NO") &&
+          Number.isFinite(b.shares) &&
+          Number.isFinite(b.entryPrice),
+      )
+      .map(
+        (b): Bet => ({
+          // hand-edited files may lack the bookkeeping fields — fill them in
+          id: typeof b.id === "string" && b.id ? b.id : newBetId(),
+          eventId: typeof b.eventId === "string" ? b.eventId : "",
+          marketId: b.marketId,
+          label: typeof b.label === "string" && b.label ? b.label : `market ${b.marketId}`,
+          side: b.side,
+          shares: b.shares,
+          entryPrice: b.entryPrice,
+          openedAt: typeof b.openedAt === "string" ? b.openedAt : new Date().toISOString(),
+        }),
+      );
   });
 }

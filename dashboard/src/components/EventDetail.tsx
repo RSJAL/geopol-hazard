@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
-import { buildLadder, fmtVolume, liveYes, deadlineLabel } from "../lib/analytics";
+import { buildLadder, fmtVolume, liveYes, deadlineLabel, type LadderRow } from "../lib/analytics";
 import { newBetId } from "../lib/bets";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
@@ -76,6 +76,74 @@ function BetForm({
         save bet
       </button>
       <button className="btn" onClick={onClose}>✕</button>
+    </div>
+  );
+}
+
+/** PMF bar chart: per-day probability mass at each deadline, implied ↔ marginal. */
+function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
+  const [mode, setMode] = useState<"implied" | "marginal">("implied");
+  const vals = ladder.map((r) => (mode === "implied" ? r.implDaily : r.margDaily));
+
+  const CW = 640, CH = 170, padL = 46, padR = 8, padT = 10, padB = 26;
+  const maxV = Math.max(...vals, 1e-9);
+  const minV = Math.min(...vals, 0); // negative marginals (NEG) drop below zero
+  const span = maxV - minV || 1e-9;
+  const y = (v: number) => padT + ((maxV - v) / span) * (CH - padT - padB);
+  const zero = y(0);
+  const slot = (CW - padL - padR) / ladder.length;
+  const bw = Math.min(56, slot - 10);
+
+  const nTicks = 4;
+  const ticks = Array.from({ length: nTicks + 1 }, (_, i) => {
+    const v = minV + (span / nTicks) * i;
+    return { y: y(v), label: `${v.toFixed(3)}%` };
+  });
+
+  return (
+    <div className="pmf-chart">
+      <div className="chart-head">
+        <span className="panel-title">Hazard rate PMF <span className="muted">(probability mass per day)</span></span>
+        <div className="toggle">
+          <button className={mode === "implied" ? "on" : ""} onClick={() => setMode("implied")}>
+            implied/day
+          </button>
+          <button className={mode === "marginal" ? "on" : ""} onClick={() => setMode("marginal")}>
+            marginal/day
+          </button>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${CW} ${CH}`}>
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line x1={padL} x2={CW - padR} y1={t.y} y2={t.y} className="grid-line" />
+            <text x={padL - 5} y={t.y + 3} className="tick tick-y">{t.label}</text>
+          </g>
+        ))}
+        {minV < 0 && (
+          <line x1={padL} x2={CW - padR} y1={zero} y2={zero} className="zero-line" />
+        )}
+        {ladder.map((r, i) => {
+          const v = vals[i];
+          const x = padL + slot * (i + 0.5);
+          const top = Math.min(y(v), zero);
+          const h = Math.abs(y(v) - zero);
+          const cls =
+            v < 0 ? "pmf-bar-neg" : r.isPeak && mode === "implied" ? "pmf-bar-peak" : "pmf-bar";
+          return (
+            <g key={r.endDate}>
+              <title>
+                {`${r.label}: ${v.toFixed(3)}%/day` +
+                  (mode === "marginal"
+                    ? ` over ${r.windowDays}-day window (${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}% mass)`
+                    : ` (${r.yes.toFixed(1)}% ÷ ${r.days}d)`)}
+              </title>
+              <rect x={x - bw / 2} y={top} width={bw} height={Math.max(1.5, h)} className={cls} />
+              <text x={x} y={CH - 3} className="tick tick-x">{r.label.replace(/^By /, "")}</text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
@@ -296,7 +364,7 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
       <div className="chart-head">
         <span className="panel-title">Price paths</span>
         <div className="toggle">
-          {(["1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
+          {(["1d", "1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
             <button key={iv} className={interval === iv ? "on" : ""} onClick={() => setInterval_(iv)}>
               {iv}
             </button>
@@ -306,6 +374,9 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
       {series === null
         ? <div className="chart-empty">Loading price history…</div>
         : <PriceChart series={series} />}
+
+      {/* full event page only — the map-side panel stays compact */}
+      {!showFullViewLink && ladder.length >= 2 && <HazardPmf ladder={ladder} />}
     </div>
   );
 }

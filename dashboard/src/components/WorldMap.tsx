@@ -22,6 +22,8 @@ interface Props {
   onSelectRegion: (id: string | null) => void;
   /** event to focus (pan/highlight) — set when the user picks an event */
   focusEvent: CatalogEvent | null;
+  /** clicking empty map (not a bubble, not a drag) clears the selection */
+  onClearFocus: () => void;
   watchlist: Set<string>;
   betEventIds: Set<string>;
 }
@@ -55,7 +57,7 @@ function clampTransform(t: Transform): Transform {
 
 export default function WorldMap({
   events, regions, countries, selectedRegion, onSelectRegion,
-  focusEvent, watchlist, betEventIds,
+  focusEvent, onClearFocus, watchlist, betEventIds,
 }: Props) {
   const [world, setWorld] = useState<FeatureCollection | null>(null);
   const [disputed, setDisputed] = useState<FeatureCollection | null>(null);
@@ -64,9 +66,10 @@ export default function WorldMap({
   const [filter, setFilter] = useState<MapFilter>("all");
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+  const dragMoved = useRef(false);
 
   useEffect(() => {
-    fetch("geo/countries-110m.json")
+    fetch("geo/countries-50m.json")
       .then((r) => r.json())
       .then((topo: Topology<{ countries: GeometryCollection }>) =>
         setWorld(feature(topo, topo.objects.countries)))
@@ -93,6 +96,10 @@ export default function WorldMap({
   }, [events, filter, watchlist, betEventIds]);
 
   const countryMode = t.k >= COUNTRY_ZOOM;
+
+  // events with no inferred region never get a bubble — reachable via the
+  // "global" chip below, which drives CatalogPanel's __global__ filter
+  const globalCount = visibleEvents.filter((e) => !e.region).length;
 
   const bubbles: Bubble[] = useMemo(() => {
     const byAnchor = new Map<string, CatalogEvent[]>();
@@ -205,9 +212,12 @@ export default function WorldMap({
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     (e.target as Element).setPointerCapture?.(e.pointerId);
     drag.current = { x: e.clientX, y: e.clientY, tx: t.tx, ty: t.ty };
+    dragMoved.current = false;
   };
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!drag.current) return;
+    if (Math.abs(e.clientX - drag.current.x) + Math.abs(e.clientY - drag.current.y) > 4)
+      dragMoved.current = true;
     const rect = svgRef.current!.getBoundingClientRect();
     const dx = ((e.clientX - drag.current.x) / rect.width) * W;
     const dy = ((e.clientY - drag.current.y) / rect.height) * H;
@@ -235,6 +245,7 @@ export default function WorldMap({
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
+        onClick={() => { if (!dragMoved.current) onClearFocus(); }}
       >
         <g
           transform={`translate(${t.tx},${t.ty}) scale(${t.k})`}
@@ -303,7 +314,17 @@ export default function WorldMap({
               {f === "all" ? "all markets" : f === "watch" ? "★ watchlist" : "$ my bets"}
             </button>
           ))}
-          {selectedRegion && (
+          {globalCount > 0 && (
+            <button
+              className={`chip${selectedRegion === "__global__" ? " chip-active" : ""}`}
+              title="Events with no mapped region — not shown on the map"
+              onClick={() =>
+                onSelectRegion(selectedRegion === "__global__" ? null : "__global__")}
+            >
+              ◌ global ({globalCount})
+            </button>
+          )}
+          {selectedRegion && selectedRegion !== "__global__" && (
             <button className="chip chip-active" onClick={() => onSelectRegion(null)}>
               ✕ {selectedRegion.startsWith("country:")
                 ? countries.find((c) => c.id === selectedRegion.slice(8))?.name ?? "filter"

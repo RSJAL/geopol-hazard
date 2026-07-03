@@ -263,6 +263,7 @@ export default function App() {
               selectedRegion={regionFilter}
               onSelectRegion={setRegionFilter}
               focusEvent={selected}
+              onClearFocus={() => setSelectedId(null)}
               watchlist={watchSet}
               betEventIds={betEventIds}
             />

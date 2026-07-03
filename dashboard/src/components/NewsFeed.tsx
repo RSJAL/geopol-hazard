@@ -42,8 +42,17 @@ export default function NewsFeed({
   );
 }
 
-/** Aggregate escalation sentiment per day, charted as bars (hot below zero). */
-export function SentimentChart({ articles }: { articles: NewsArticle[] }) {
+/** Aggregate escalation sentiment per day, charted as bars (hot below zero).
+ *  Clicking a day filters the article list to that day (click again to clear). */
+export function SentimentChart({
+  articles,
+  selectedDay = null,
+  onSelectDay,
+}: {
+  articles: NewsArticle[];
+  selectedDay?: string | null;
+  onSelectDay?: (day: string | null) => void;
+}) {
   const days = useMemo(() => {
     const byDay = new Map<string, number[]>();
     for (const a of articles) {
@@ -62,25 +71,39 @@ export function SentimentChart({ articles }: { articles: NewsArticle[] }) {
 
   if (days.length < 2) return null;
 
-  const CW = 640, CH = 90, pad = 24;
-  const bw = Math.min(40, (CW - 2 * pad) / days.length - 4);
-  const mid = CH / 2;
+  const CW = 640, CH = 150, pad = 24;
+  const slot = (CW - 2 * pad) / days.length;
+  const bw = Math.min(46, slot - 4);
+  const mid = (CH - 14) / 2;
+  const labelEvery = Math.ceil(days.length / 12); // avoid crowded x labels
 
   return (
     <div className="sentiment-chart">
       <div className="panel-sub" style={{ marginBottom: 4 }}>
         Aggregate escalation sentiment by day — <span className="down">below = hot</span>,{" "}
         <span className="up">above = cool</span>
+        {onSelectDay && " · click a day to filter articles"}
       </div>
       <svg viewBox={`0 0 ${CW} ${CH}`}>
         <line x1={pad} x2={CW - pad} y1={mid} y2={mid} className="grid-line" />
         {days.map((d, i) => {
-          const x = pad + ((CW - 2 * pad) / days.length) * (i + 0.5);
-          const h = Math.abs(d.mean) * (mid - 12);
+          const x = pad + slot * (i + 0.5);
+          const h = Math.abs(d.mean) * (mid - 14);
           const hot = d.mean < 0;
+          const sel = d.day === selectedDay;
           return (
-            <g key={d.day}>
-              <title>{`${d.day}: ${d.mean.toFixed(2)} (${d.n} articles)`}</title>
+            <g
+              key={d.day}
+              className={onSelectDay ? "sent-day" : undefined}
+              onClick={() => onSelectDay?.(sel ? null : d.day)}
+            >
+              <title>{`${d.day}: ${d.mean.toFixed(2)} (${d.n} article${d.n > 1 ? "s" : ""})`}</title>
+              {/* full-height hit area so thin bars are easy to click */}
+              <rect x={x - slot / 2} y={0} width={slot} height={CH - 12} fill="transparent" />
+              {sel && (
+                <rect x={x - slot / 2 + 1} y={2} width={slot - 2} height={CH - 16}
+                      className="sent-day-sel" />
+              )}
               <rect
                 x={x - bw / 2}
                 y={hot ? mid : mid - h}
@@ -88,9 +111,11 @@ export function SentimentChart({ articles }: { articles: NewsArticle[] }) {
                 height={Math.max(1.5, h)}
                 className={hot ? "sent-bar-hot" : "sent-bar-cool"}
               />
-              <text x={x} y={CH - 3} className="tick tick-x">
-                {d.day.slice(5)}
-              </text>
+              {i % labelEvery === 0 && (
+                <text x={x} y={CH - 3} className="tick tick-x">
+                  {d.day.slice(5)}
+                </text>
+              )}
             </g>
           );
         })}
