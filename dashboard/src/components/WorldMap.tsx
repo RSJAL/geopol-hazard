@@ -20,6 +20,9 @@ interface Props {
   countries: CountryInfo[];
   selectedRegion: string | null;
   onSelectRegion: (id: string | null) => void;
+  /** all/watchlist/bets scope — lifted so the catalog can honor it too */
+  filter: MapFilter;
+  onFilterChange: (f: MapFilter) => void;
   /** event to focus (pan/highlight) — set when the user picks an event */
   focusEvent: CatalogEvent | null;
   /** clicking empty map (not a bubble, not a drag) clears the selection */
@@ -57,13 +60,12 @@ function clampTransform(t: Transform): Transform {
 
 export default function WorldMap({
   events, regions, countries, selectedRegion, onSelectRegion,
-  focusEvent, onClearFocus, watchlist, betEventIds,
+  filter, onFilterChange, focusEvent, onClearFocus, watchlist, betEventIds,
 }: Props) {
   const [world, setWorld] = useState<FeatureCollection | null>(null);
   const [disputed, setDisputed] = useState<FeatureCollection | null>(null);
   const [t, setT] = useState<Transform>({ k: 1, tx: 0, ty: 0 });
   const [animate, setAnimate] = useState(false);
-  const [filter, setFilter] = useState<MapFilter>("all");
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   const dragMoved = useRef(false);
@@ -317,7 +319,7 @@ export default function WorldMap({
         <div className="map-filter">
           <button
             className={`chip${filter === "all" ? " chip-active" : ""}`}
-            onClick={() => setFilter("all")}
+            onClick={() => onFilterChange("all")}
           >
             all markets
           </button>
@@ -335,7 +337,7 @@ export default function WorldMap({
             <button
               key={f}
               className={`chip${filter === f ? " chip-active" : ""}`}
-              onClick={() => setFilter(f)}
+              onClick={() => onFilterChange(f)}
             >
               {f === "watch" ? "★ watchlist" : "$ my bets"}
             </button>

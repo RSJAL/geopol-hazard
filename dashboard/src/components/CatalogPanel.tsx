@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import type { Catalog, CatalogEvent, LivePriceMap } from "../lib/types";
 import { anchorCountry, fmtVolume, headlineMarket, liveYes } from "../lib/analytics";
+import type { MapFilter } from "./WorldMap";
 
 interface Props {
   catalog: Catalog;
   live: LivePriceMap;
   regionFilter: string | null;
+  /** map scope: geography clicks only list watched/bet events in these modes */
+  mapMode: MapFilter;
+  betEventIds: Set<string>;
   watchlist: Set<string>;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -21,7 +25,8 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function CatalogPanel({
-  catalog, live, regionFilter, watchlist, selectedId, onSelect, onToggleWatch,
+  catalog, live, regionFilter, mapMode, betEventIds, watchlist,
+  selectedId, onSelect, onToggleWatch,
 }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -42,6 +47,10 @@ export default function CatalogPanel({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let evs = catalog.events.filter((e) => {
+      // a geography click while the map shows only watchlist/bets should
+      // list only those events, not everything in the geography
+      if (regionFilter && mapMode === "watch" && !watchlist.has(e.id)) return false;
+      if (regionFilter && mapMode === "bets" && !betEventIds.has(e.id)) return false;
       if (regionFilter === "__global__" && e.region) return false;
       if (regionFilter?.startsWith("country:")) {
         // same anchor rule as the map bubbles, so counts match the list
@@ -65,7 +74,7 @@ export default function CatalogPanel({
       case "endDate":   evs = evs.sort((a, b) => a.endDate.localeCompare(b.endDate)); break;
     }
     return evs;
-  }, [catalog, query, category, type, sort, watchOnly, watchlist, regionFilter, regionOfCountry]);
+  }, [catalog, query, category, type, sort, watchOnly, watchlist, regionFilter, regionOfCountry, mapMode, betEventIds]);
 
   return (
     <div className="catalog-panel">

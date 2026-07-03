@@ -437,6 +437,39 @@ a:hover { text-decoration: underline; }
 .group-tabs { margin: 6px 0 8px; flex-wrap: wrap; }
 .ladder.mini td, .ladder.mini th { padding: 4px 6px; font-size: 0.72rem; }
 
+/* ── Market comparison view ──────────────────────────────────────────────── */
+.cmp-btn {
+  background: none; border: 1px solid var(--grid); color: var(--muted);
+  border-radius: 4px; font-size: 0.72rem; padding: 0 5px; cursor: pointer;
+  line-height: 1.5; flex-shrink: 0;
+}
+.cmp-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cmp-btn.on { border-color: var(--accent); color: var(--accent); background: var(--head); }
+.compare-view {
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 10px;
+  padding: 12px; margin-bottom: 12px;
+}
+.compare-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px; margin-top: 10px;
+}
+.compare-col {
+  background: var(--head); border: 1px solid var(--grid); border-radius: 8px;
+  padding: 10px 10px 4px;
+}
+.compare-col .group-meta { margin: 2px 0 6px 0; }
+.compare-col-head { display: flex; align-items: center; gap: 6px; }
+.compare-col-head .group-title { flex: 1; color: var(--text); }
+.compare-hint {
+  background: var(--panel); border: 1px dashed var(--grid); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 12px; font-size: 0.76rem; color: var(--muted);
+}
+.link-btn {
+  background: none; border: none; color: var(--accent); cursor: pointer;
+  font-size: inherit; padding: 0;
+}
+.link-btn:hover { text-decoration: underline; }
+
 /* ── Event drill-down page ───────────────────────────────────────────────── */
 .event-page { min-height: 60vh; }
 .back-link {

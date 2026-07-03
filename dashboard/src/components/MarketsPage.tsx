@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Catalog, CatalogEvent, LivePriceMap, NewsData } from "../lib/types";
+import type { Catalog, CatalogEvent, LivePriceMap, NewsData, PricePoint } from "../lib/types";
 import { buildLadder, fmtVolume, liveYes, headlineMarket } from "../lib/analytics";
 import { buildGroups, memberLabel, type EventGroup } from "../lib/grouping";
+import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
+import PriceChart, { type Series } from "./PriceChart";
+
+const COMPARE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a"];
+const COMPARE_MAX = 3;
 
 interface Props {
   catalog: Catalog;
@@ -143,14 +148,100 @@ function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
   );
 }
 
+/** Side-by-side comparison of selected market groups with overlaid prices. */
+function CompareView({
+  groups, live, onRemove,
+}: {
+  groups: EventGroup[];
+  live: LivePriceMap;
+  onRemove: (key: string) => void;
+}) {
+  const [interval, setInterval_] = useState<HistoryInterval>("1m");
+  const [series, setSeries] = useState<Series[] | null>(null);
+
+  // each group is represented by its merged/highest-volume event's
+  // nearest-deadline market
+  const reps = useMemo(
+    () =>
+      groups.map((g) => {
+        const ev = g.merged ?? g.events.reduce((a, b) => (b.volume > a.volume ? b : a));
+        return { group: g, ev, market: headlineMarket(ev) };
+      }),
+    [groups],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setSeries(null);
+    Promise.all(
+      reps.map(async ({ group, market }, i): Promise<Series> => {
+        let points: PricePoint[] = [];
+        if (market.yesTokenId) {
+          try {
+            points = await fetchPriceHistory(market.yesTokenId, interval);
+          } catch {
+            /* leave an empty line */
+          }
+        }
+        return {
+          label: group.title.slice(0, 32),
+          color: COMPARE_COLORS[i % COMPARE_COLORS.length],
+          points,
+        };
+      }),
+    ).then((s) => { if (!cancelled) setSeries(s); });
+    return () => { cancelled = true; };
+  }, [reps, interval]);
+
+  return (
+    <div className="compare-view">
+      <div className="chart-head">
+        <span className="panel-title">
+          ⇄ Comparison <span className="muted">· nearest-deadline YES price</span>
+        </span>
+        <div className="toggle">
+          {(["1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
+            <button key={iv} className={interval === iv ? "on" : ""} onClick={() => setInterval_(iv)}>
+              {iv}
+            </button>
+          ))}
+        </div>
+      </div>
+      {series === null
+        ? <div className="chart-empty">Loading price history…</div>
+        : <PriceChart series={series} />}
+      <div className="compare-grid">
+        {reps.map(({ group, ev, market }, i) => (
+          <div key={group.key} className="compare-col">
+            <div className="compare-col-head">
+              <span style={{ color: COMPARE_COLORS[i % COMPARE_COLORS.length] }}>━</span>
+              <a className="group-title" href={`#/event/${ev.id}`}>{group.title}</a>
+              <button className="star" title="Remove from comparison" onClick={() => onRemove(group.key)}>
+                ✕
+              </button>
+            </div>
+            <div className="group-meta">
+              {ev.category} · {fmtVolume(group.events.reduce((s, e) => s + e.volume, 0))}
+              {" · YES "}{liveYes(market, live).toFixed(1)}%
+            </div>
+            <MiniLadder ev={ev} live={live} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function GroupCard({
-  group, live, news, watchlist, onToggleWatch,
+  group, live, news, watchlist, comparing, onToggleWatch, onToggleCompare,
 }: {
   group: EventGroup;
   live: LivePriceMap;
   news: NewsData | null;
   watchlist: Set<string>;
+  comparing: boolean;
   onToggleWatch: (id: string) => void;
+  onToggleCompare: () => void;
 }) {
   // tab: "all" (merged cross-event ladder) or a member event id
   const [tab, setTab] = useState<string>(group.merged ? "all" : group.events[0].id);
@@ -183,6 +274,13 @@ function GroupCard({
             }}
           >
             {watched ? "★" : "☆"}
+          </button>
+          <button
+            className={`cmp-btn${comparing ? " on" : ""}`}
+            title={comparing ? "Remove from comparison" : "Add to comparison"}
+            onClick={(e) => { e.stopPropagation(); onToggleCompare(); }}
+          >
+            ⇄
           </button>
           <span className="group-title">{group.title}</span>
           {chg !== 0 && (
@@ -219,10 +317,35 @@ function GroupCard({
 
 export default function MarketsPage({ catalog, live, watchlist, news, onToggleWatch }: Props) {
   const [showAll, setShowAll] = useState(false);
+  // compared group keys live in ?cmp= so comparisons are shareable links
+  const [compare, setCompare] = useState<string[]>(() => {
+    const p = new URLSearchParams(window.location.search).get("cmp");
+    return p ? p.split("~").filter(Boolean).slice(0, COMPARE_MAX) : [];
+  });
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (compare.length) url.searchParams.set("cmp", compare.join("~"));
+    else url.searchParams.delete("cmp");
+    window.history.replaceState(null, "", url.toString());
+  }, [compare]);
+
+  const toggleCompare = (key: string) =>
+    setCompare((prev) =>
+      prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : prev.length >= COMPARE_MAX
+          ? prev
+          : [...prev, key],
+    );
 
   const groups = useMemo(() => buildGroups(catalog.events), [catalog]);
   const tracked = groups.filter((g) => g.events.some((e) => watchlist.has(e.id)));
   const shown = showAll || !tracked.length ? groups.slice(0, 30) : tracked;
+
+  const compareGroups = compare
+    .map((k) => groups.find((g) => g.key === k))
+    .filter((g): g is EventGroup => !!g);
 
   return (
     <div className="markets-page">
@@ -245,6 +368,17 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
           )}
         </div>
       </div>
+
+      {compareGroups.length >= 2 && (
+        <CompareView groups={compareGroups} live={live} onRemove={toggleCompare} />
+      )}
+      {compareGroups.length === 1 && (
+        <div className="compare-hint">
+          ⇄ <b>{compareGroups[0].title}</b> selected — pick {COMPARE_MAX > 2 ? "1–2 more markets" : "one more market"} to
+          compare, or <button className="link-btn" onClick={() => setCompare([])}>clear</button>.
+        </div>
+      )}
+
       <div className="markets-grid">
         {shown.map((g) => (
           <GroupCard
@@ -253,7 +387,9 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
             live={live}
             news={news}
             watchlist={watchlist}
+            comparing={compare.includes(g.key)}
             onToggleWatch={onToggleWatch}
+            onToggleCompare={() => toggleCompare(g.key)}
           />
         ))}
       </div>

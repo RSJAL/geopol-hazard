@@ -4,7 +4,7 @@ import { fetchCatalog, fetchLivePrices, fetchNews } from "./lib/api";
 import { catalogStats, fmtVolume } from "./lib/analytics";
 import { loadWatchlist, persist } from "./lib/watchlist";
 import { loadBets, persistBets } from "./lib/bets";
-import WorldMap from "./components/WorldMap";
+import WorldMap, { type MapFilter } from "./components/WorldMap";
 import CatalogPanel from "./components/CatalogPanel";
 import EventDetail from "./components/EventDetail";
 import WatchlistPanel from "./components/WatchlistPanel";
@@ -36,6 +36,7 @@ export default function App() {
     () => new URLSearchParams(window.location.search).get("e"),
   );
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
+  const [mapMode, setMapMode] = useState<MapFilter>("all");
   const [route, setRoute] = useState<Route>(() => parseRoute());
   const [railTab, setRailTab] = useState<"watch" | "bets">("watch");
 
@@ -250,6 +251,8 @@ export default function App() {
             catalog={catalog}
             live={live}
             regionFilter={regionFilter}
+            mapMode={mapMode}
+            betEventIds={betEventIds}
             watchlist={watchSet}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -262,6 +265,8 @@ export default function App() {
               countries={catalog.countries}
               selectedRegion={regionFilter}
               onSelectRegion={setRegionFilter}
+              filter={mapMode}
+              onFilterChange={setMapMode}
               focusEvent={selected}
               onClearFocus={() => setSelectedId(null)}
               watchlist={watchSet}
