@@ -38,7 +38,11 @@ export default function CatalogPanel({
     const q = query.trim().toLowerCase();
     let evs = catalog.events.filter((e) => {
       if (regionFilter === "__global__" && e.region) return false;
-      if (regionFilter && regionFilter !== "__global__" && e.region !== regionFilter) return false;
+      if (regionFilter?.startsWith("country:")) {
+        if (e.countries?.[0] !== regionFilter.slice(8)) return false;
+      } else if (regionFilter && regionFilter !== "__global__" && e.region !== regionFilter) {
+        return false;
+      }
       if (category && e.category !== category) return false;
       if (type && e.type !== type) return false;
       if (watchOnly && !watchlist.has(e.id)) return false;

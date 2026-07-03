@@ -90,14 +90,20 @@ function GroupCard({
   const watched = group.events.some((e) => watchlist.has(e.id));
 
   return (
-    <div className="group-card">
+    <div
+      className="group-card"
+      onClick={() => { window.location.hash = `#/event/${current.id}`; }}
+    >
       <div className="group-head">
         <div className="group-title-wrap">
           <button
             className={`star${watched ? " on" : ""}`}
             title={watched ? "Remove from watchlist" : "Add to watchlist"}
-            onClick={() => group.events.forEach((e) =>
-              (watched ? watchlist.has(e.id) : true) && onToggleWatch(e.id))}
+            onClick={(e) => {
+              e.stopPropagation();
+              group.events.forEach((ev) =>
+                (watched ? watchlist.has(ev.id) : true) && onToggleWatch(ev.id));
+            }}
           >
             {watched ? "★" : "☆"}
           </button>
@@ -115,7 +121,7 @@ function GroupCard({
       </div>
 
       {(group.events.length > 1) && (
-        <div className="toggle group-tabs">
+        <div className="toggle group-tabs" onClick={(e) => e.stopPropagation()}>
           {group.merged && (
             <button className={tab === "all" ? "on" : ""} onClick={() => setTab("all")}>
               all horizons
@@ -140,10 +146,18 @@ function GroupCard({
 
 export default function MarketsPage({ catalog, live, watchlist, news, onToggleWatch }: Props) {
   const [showAll, setShowAll] = useState(false);
+  const [addQuery, setAddQuery] = useState("");
 
   const groups = useMemo(() => buildGroups(catalog.events), [catalog]);
   const tracked = groups.filter((g) => g.events.some((e) => watchlist.has(e.id)));
   const shown = showAll || !tracked.length ? groups.slice(0, 30) : tracked;
+
+  const addFromQuery = (q: string) => {
+    const g = groups.find((x) => x.title.toLowerCase() === q.trim().toLowerCase());
+    if (!g) return;
+    g.events.forEach((e) => { if (!watchlist.has(e.id)) onToggleWatch(e.id); });
+    setAddQuery("");
+  };
 
   return (
     <div className="markets-page">
@@ -156,12 +170,28 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
               : "no watchlist yet — showing top markets by volume"}
           </span>
         </div>
-        {tracked.length > 0 && (
-          <label className="check">
-            <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
-            show all markets
-          </label>
-        )}
+        <div className="markets-tools">
+          <input
+            className="search watch-add"
+            list="all-groups"
+            placeholder="＋ add market to watchlist…"
+            value={addQuery}
+            onChange={(e) => setAddQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") addFromQuery(addQuery); }}
+            onBlur={() => addQuery && addFromQuery(addQuery)}
+          />
+          <datalist id="all-groups">
+            {groups
+              .filter((g) => !g.events.some((e) => watchlist.has(e.id)))
+              .map((g) => <option key={g.key} value={g.title} />)}
+          </datalist>
+          {tracked.length > 0 && (
+            <label className="check">
+              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+              show all markets
+            </label>
+          )}
+        </div>
       </div>
       <div className="markets-grid">
         {shown.map((g) => (

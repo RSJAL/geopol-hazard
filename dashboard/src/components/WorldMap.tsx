@@ -99,8 +99,9 @@ export default function WorldMap({
 
     for (const ev of visibleEvents) {
       if (countryMode) {
-        // an event can pin to several countries (e.g. "US x Russia clash")
-        const cids = ev.countries?.length ? ev.countries : [];
+        // pin each event to its PRIMARY country only, so zoomed-in counts
+        // sum to the same totals as region view (no double counting)
+        const cids = ev.countries?.length ? [ev.countries[0]] : [];
         for (const cid of cids) {
           (byAnchor.get(cid) ?? byAnchor.set(cid, []).get(cid)!).push(ev);
         }
@@ -254,7 +255,9 @@ export default function WorldMap({
           )}
 
           {bubbles.map((b) => {
-            const active = selectedRegion === b.id;
+            // country bubbles filter with a "country:" prefix
+            const filterId = b.kind === "region" ? b.id : `country:${b.id}`;
+            const active = selectedRegion === filterId;
             const hot = b.maxMove >= 0.05;
             const r = b.r * inv;
             return (
@@ -264,7 +267,7 @@ export default function WorldMap({
                 transform={`translate(${b.x},${b.y})`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (b.kind === "region") onSelectRegion(active ? null : b.id);
+                  onSelectRegion(active ? null : filterId);
                 }}
               >
                 <title>
@@ -302,7 +305,9 @@ export default function WorldMap({
           ))}
           {selectedRegion && (
             <button className="chip chip-active" onClick={() => onSelectRegion(null)}>
-              ✕ {regions.find((r) => r.id === selectedRegion)?.name ?? "filter"}
+              ✕ {selectedRegion.startsWith("country:")
+                ? countries.find((c) => c.id === selectedRegion.slice(8))?.name ?? "filter"
+                : regions.find((r) => r.id === selectedRegion)?.name ?? "filter"}
             </button>
           )}
         </div>
