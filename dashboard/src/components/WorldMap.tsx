@@ -100,7 +100,7 @@ export default function WorldMap({
     for (const ev of visibleEvents) {
       if (countryMode) {
         // an event can pin to several countries (e.g. "US x Russia clash")
-        const cids = ev.countries.length ? ev.countries : [];
+        const cids = ev.countries?.length ? ev.countries : [];
         for (const cid of cids) {
           (byAnchor.get(cid) ?? byAnchor.set(cid, []).get(cid)!).push(ev);
         }
@@ -148,7 +148,7 @@ export default function WorldMap({
   // ── focus/pan on selected event ─────────────────────────────────────────────
   const focusPoint = useMemo(() => {
     if (!focusEvent) return null;
-    const c = focusEvent.countries.length
+    const c = focusEvent.countries?.length
       ? countries.find((x) => x.id === focusEvent.countries[0])
       : regions.find((x) => x.id === focusEvent.region);
     if (!c) return null;
