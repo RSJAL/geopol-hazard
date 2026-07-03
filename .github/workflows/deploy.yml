@@ -43,5 +43,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Pages backend intermittently returns "Deployment failed, try again
+      # later" — retry with backoff instead of failing the run
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - if: steps.deployment.outcome == 'failure'
+        run: sleep 120
+      - id: deployment-retry-1
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - if: steps.deployment.outcome == 'failure' && steps.deployment-retry-1.outcome == 'failure'
+        run: sleep 240
+      - id: deployment-retry-2
+        if: steps.deployment.outcome == 'failure' && steps.deployment-retry-1.outcome == 'failure'
         uses: actions/deploy-pages@v4
