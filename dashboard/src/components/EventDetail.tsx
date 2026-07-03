@@ -56,6 +56,7 @@ function BetForm({
         onChange={(e) => setPrice(e.target.value)} placeholder="entry ¢"
       />
       <span className="muted">¢ = ${cost.toFixed(2)}</span>
+      <span className="bet-form-spacer" />
       <button
         className="btn btn-primary"
         disabled={nShares <= 0 || nPrice <= 0 || nPrice >= 100}
@@ -75,7 +76,7 @@ function BetForm({
       >
         save bet
       </button>
-      <button className="btn" onClick={onClose}>✕</button>
+      <button className="btn bet-form-close" title="Close" onClick={onClose}>✕</button>
     </div>
   );
 }
@@ -108,10 +109,10 @@ function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
         <span className="panel-title">Hazard rate PMF <span className="muted">(probability mass per day)</span></span>
         <div className="toggle">
           <button className={mode === "implied" ? "on" : ""} onClick={() => setMode("implied")}>
-            implied/day
+            daily odds
           </button>
           <button className={mode === "marginal" ? "on" : ""} onClick={() => setMode("marginal")}>
-            marginal/day
+            period odds/day
           </button>
         </div>
       </div>
@@ -151,7 +152,7 @@ function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
 }
 
 export default function EventDetail({ event, live, onAddBet, showFullViewLink }: Props) {
-  const [mode, setMode] = useState<RateMode>("daily");
+  const [mode, setMode] = useState<RateMode>("total"); // total odds are the site default
   const [interval, setInterval_] = useState<HistoryInterval>("1m");
   const [series, setSeries] = useState<Series[] | null>(null);
   const [betMarketId, setBetMarketId] = useState<string | null>(null);
@@ -237,8 +238,8 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
         </div>
         {event.type === "horizon" && (
           <div className="toggle">
-            <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>/day</button>
             <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>total</button>
+            <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>/day</button>
           </div>
         )}
       </div>
@@ -249,11 +250,14 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
             <tr>
               <th>Deadline</th>
               <th className="num">YES</th>
-              <th className="num">{mode === "daily" ? "Impl/day" : "Cumulative"}</th>
-              <th className="num">{mode === "daily" ? "Marg/day" : "Marginal"}</th>
+              <th className="num">{mode === "daily" ? "Daily odds" : "Total odds"}</th>
+              <th className="num" title="Odds added by this window vs the preceding deadline">
+                {mode === "daily" ? "Period /day" : "Period odds"}
+              </th>
               <th className="num">Days</th>
               <th className="viz"></th>
               <th className="flags"></th>
+              <th className="bet-th"></th>
             </tr>
           </thead>
           <tbody>
@@ -283,12 +287,12 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
                     {r.isInversion && <span className="badge b-inv">INV</span>}
                     {r.isCheap && <span className="badge b-cheap">CHEAP</span>}
                     {r.isNegativeMarginal && <span className="badge b-neg" title="Longer deadline priced below shorter — inconsistent pricing">NEG</span>}
-                    {betBtn(r.market)}
                   </td>
+                  <td className="bet-cell">{betBtn(r.market)}</td>
                 </tr>,
                 betMarketId === r.market.id && (
                   <tr key={`${r.endDate}-bet`} className="bet-row">
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <BetForm
                         event={event} market={r.market} label={r.label} live={live}
                         onAddBet={onAddBet} onClose={() => setBetMarketId(null)}

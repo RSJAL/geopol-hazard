@@ -5,10 +5,11 @@ export interface LadderRow {
   label: string;
   endDate: string;
   days: number;
-  yes: number; // cumulative YES %
-  marginal: number; // marginal probability of this window, pct points
-  implDaily: number; // cumulative YES% / days
-  margDaily: number; // marginal % / window days
+  yes: number; // cumulative (total) YES %
+  marginal: number; // period odds: yes − previous deadline's yes, pct points
+  implDaily: number; // implied daily odds: 1 − (1−P)^(1/days), in %
+  margDaily: number; // period daily odds: in-window hazard conditional on
+  //                    surviving the previous deadline, in %
   windowDays: number;
   isPeak: boolean;
   isInversion: boolean; // implied daily fell vs prior deadline
@@ -37,6 +38,18 @@ export function liveYes(m: CatalogMarket, live: LivePriceMap): number {
 }
 
 /**
+ * Implied daily odds: the constant per-day probability p such that running it
+ * for `days` days compounds to the cumulative probability P:
+ *   P = 1 − (1−p)^days  ⟹  p = 1 − (1−P)^(1/days)
+ * (NOT P/days — the linear version materially understates high-P markets.)
+ * Inputs and outputs in percent.
+ */
+export function impliedDaily(pctCum: number, days: number): number {
+  const surv = Math.max(1 - pctCum / 100, 1e-9);
+  return (1 - Math.pow(surv, 1 / Math.max(1, days))) * 100;
+}
+
+/**
  * Build the deadline ladder for a horizon event. When several sub-markets
  * share an end date (different outcome thresholds), the highest-volume one
  * is used.
@@ -51,7 +64,7 @@ export function buildLadder(ev: CatalogEvent, live: LivePriceMap): LadderRow[] {
     .map((m) => ({ m, days: daysFromToday(m.endDate) }))
     .sort((a, b) => a.days - b.days);
 
-  const implVals = markets.map(({ m, days }) => liveYes(m, live) / days);
+  const implVals = markets.map(({ m, days }) => impliedDaily(liveYes(m, live), days));
   const peak = Math.max(...implVals);
 
   const rows: LadderRow[] = [];
@@ -61,10 +74,16 @@ export function buildLadder(ev: CatalogEvent, live: LivePriceMap): LadderRow[] {
 
   for (const { m, days } of markets) {
     const yes = liveYes(m, live);
-    const impl = yes / days;
+    const impl = impliedDaily(yes, days);
     const marginal = yes - prevYes;
     const windowDays = days - prevDays;
-    const margDaily = windowDays > 0 ? marginal / windowDays : impl;
+    // period daily odds: per-day hazard inside (prevDays, days] conditional on
+    // the event not happening by prevDays — survival-ratio form nests impl for
+    // the first row and goes negative when a longer deadline is priced lower
+    const survRatio =
+      Math.max(1 - yes / 100, 1e-9) / Math.max(1 - prevYes / 100, 1e-9);
+    const margDaily =
+      windowDays > 0 ? (1 - Math.pow(survRatio, 1 / windowDays)) * 100 : impl;
 
     rows.push({
       market: m,

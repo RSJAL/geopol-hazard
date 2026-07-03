@@ -48,6 +48,16 @@ export interface CountryInfo {
   lon: number;
   /** home region id — optional for old-schema catalog tolerance */
   region?: string;
+  /** middle hierarchy level; null/absent = country sits directly under region */
+  subregion?: string | null;
+}
+
+export interface SubregionInfo {
+  id: string;
+  region: string;
+  name: string;
+  lat: number;
+  lon: number;
 }
 
 export interface Catalog {
@@ -56,6 +66,7 @@ export interface Catalog {
   tags: string[];
   minVolume: number;
   regions: RegionInfo[];
+  subregions?: SubregionInfo[]; // optional: old-schema catalogs lack it
   countries: CountryInfo[];
   events: CatalogEvent[];
 }

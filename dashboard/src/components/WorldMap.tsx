@@ -3,20 +3,36 @@ import { geoNaturalEarth1, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import type { FeatureCollection } from "geojson";
-import type { CatalogEvent, CountryInfo, RegionInfo } from "../lib/types";
+import type { CatalogEvent, CountryInfo, RegionInfo, SubregionInfo } from "../lib/types";
 import { anchorCountry, fmtVolume } from "../lib/analytics";
 
 const W = 960;
 const H = 470;
 const MIN_K = 1;
 const MAX_K = 10;
-const COUNTRY_ZOOM = 2.4; // zoom level where region bubbles split into countries
+// 3-level hierarchy: region → subregion → country, entered at these zooms…
+const K_SUB = 2.0;
+const K_COUNTRY = 3.4;
+// …but a bubble only splits when it holds enough events (skip-level rule)
+const SPLIT_MIN = 4;
 
 export type MapFilter = "all" | "watch" | "bets";
+
+/** Personalized bet summary rendered as a small card on the map. */
+export interface BetMapCard {
+  title: string;
+  side: "YES" | "NO";
+  shares: number;
+  entry: number;
+  current: number;
+  pnl: number;
+  pnlPct: number;
+}
 
 interface Props {
   events: CatalogEvent[];
   regions: RegionInfo[];
+  subregions: SubregionInfo[];
   countries: CountryInfo[];
   selectedRegion: string | null;
   onSelectRegion: (id: string | null) => void;
@@ -29,12 +45,14 @@ interface Props {
   onClearFocus: () => void;
   watchlist: Set<string>;
   betEventIds: Set<string>;
+  /** eventId → bet summary, for personalized cards on the map */
+  betCards: Map<string, BetMapCard>;
 }
 
 interface Bubble {
   id: string;
   name: string;
-  kind: "region" | "country";
+  kind: "region" | "sub" | "country";
   x: number;
   y: number;
   r: number;
@@ -42,12 +60,32 @@ interface Bubble {
   volume: number;
   maxMove: number;
   hasBets: boolean;
+  /** set when the bubble holds exactly one event (bets-mode mini cards) */
+  soleEventId: string | null;
 }
 
 interface Transform {
   k: number;
   tx: number;
   ty: number;
+}
+
+/** Small personalized bet card drawn on the map (screen-size via 1/k scale). */
+function BetCardG({ card, inv }: { card: BetMapCard; inv: number }) {
+  const up = card.pnl >= 0;
+  return (
+    <g className="map-bet-card" transform={`scale(${inv})`} pointerEvents="none">
+      <rect x={10} y={-30} width={176} height={60} rx={7} className="bmc-rect" />
+      <text x={19} y={-12} className="bmc-title">{card.title.slice(0, 27)}</text>
+      <text x={19} y={3} className="bmc-line">
+        {card.side} {card.shares} @ {card.entry.toFixed(1)}¢ → {card.current.toFixed(1)}¢
+      </text>
+      <text x={19} y={19} className={up ? "bmc-up" : "bmc-down"}>
+        {up ? "+" : "−"}${Math.abs(card.pnl).toFixed(2)} ({card.pnlPct >= 0 ? "+" : ""}
+        {card.pnlPct.toFixed(1)}%)
+      </text>
+    </g>
+  );
 }
 
 function clampTransform(t: Transform): Transform {
@@ -59,8 +97,9 @@ function clampTransform(t: Transform): Transform {
 }
 
 export default function WorldMap({
-  events, regions, countries, selectedRegion, onSelectRegion,
+  events, regions, subregions, countries, selectedRegion, onSelectRegion,
   filter, onFilterChange, focusEvent, onClearFocus, watchlist, betEventIds,
+  betCards,
 }: Props) {
   const [world, setWorld] = useState<FeatureCollection | null>(null);
   const [disputed, setDisputed] = useState<FeatureCollection | null>(null);
@@ -97,7 +136,7 @@ export default function WorldMap({
     }
   }, [events, filter, watchlist, betEventIds]);
 
-  const countryMode = t.k >= COUNTRY_ZOOM;
+  const level = t.k >= K_COUNTRY ? 2 : t.k >= K_SUB ? 1 : 0;
 
   // events with no inferred region never get a bubble — reachable via the
   // "global" chip below, which drives CatalogPanel's __global__ filter
@@ -107,22 +146,66 @@ export default function WorldMap({
     () => new Map(countries.map((c) => [c.id, c.region])),
     [countries],
   );
+  const countryMeta = useMemo(
+    () => new Map(countries.map((c) => [c.id, c])),
+    [countries],
+  );
 
-  const bubbles: Bubble[] = useMemo(() => {
-    const byAnchor = new Map<string, CatalogEvent[]>();
+  // ── 3-level bubble aggregation with density-based level skipping ───────────
+  // An event's anchor chain is region → subregion (if its anchor country has
+  // one) → country; a bubble splits into the next level only when it holds
+  // more than SPLIT_MIN events, so sparse geographies stay merged (Fig 1).
+  const { bubbles, anchorOf } = useMemo(() => {
+    const chain = (ev: CatalogEvent) => {
+      const cid = anchorCountry(ev, regionOfCountry);
+      const sub = cid ? countryMeta.get(cid)?.subregion ?? null : null;
+      return { cid, sub };
+    };
 
+    const regionCounts = new Map<string, number>();
     for (const ev of visibleEvents) {
-      if (!ev.region) continue; // global events stay off-map at every zoom
-      // zoomed in, pin to the event's own-region country (if any) so country
-      // counts always sum back to the region totals; else keep region anchor
-      const cid = countryMode ? anchorCountry(ev, regionOfCountry) : null;
-      const aid = cid ?? ev.region;
+      if (!ev.region) continue;
+      regionCounts.set(ev.region, (regionCounts.get(ev.region) ?? 0) + 1);
+    }
+
+    // level-1 anchor (subregion, or country when the region has no middle tier)
+    const l1Anchor = new Map<string, string>();
+    const l1Counts = new Map<string, number>();
+    for (const ev of visibleEvents) {
+      if (!ev.region) continue;
+      let a1 = ev.region;
+      if ((regionCounts.get(ev.region) ?? 0) > SPLIT_MIN) {
+        const { cid, sub } = chain(ev);
+        a1 = sub ?? cid ?? ev.region;
+      }
+      l1Anchor.set(ev.id, a1);
+      l1Counts.set(a1, (l1Counts.get(a1) ?? 0) + 1);
+    }
+
+    const anchorOf = new Map<string, string>();
+    const byAnchor = new Map<string, CatalogEvent[]>();
+    for (const ev of visibleEvents) {
+      if (!ev.region) continue;
+      let aid = ev.region;
+      if (level >= 1) {
+        aid = l1Anchor.get(ev.id)!;
+        if (level >= 2) {
+          const { cid, sub } = chain(ev);
+          if (cid && sub && aid === sub && (l1Counts.get(sub) ?? 0) > SPLIT_MIN)
+            aid = cid;
+        }
+      }
+      anchorOf.set(ev.id, aid);
       (byAnchor.get(aid) ?? byAnchor.set(aid, []).get(aid)!).push(ev);
     }
 
-    const anchorInfo = new Map<string, { name: string; lat: number; lon: number; kind: "region" | "country" }>();
+    const anchorInfo = new Map<
+      string,
+      { name: string; lat: number; lon: number; kind: Bubble["kind"] }
+    >();
     for (const r of regions) anchorInfo.set(r.id, { ...r, kind: "region" });
-    if (countryMode) for (const c of countries) anchorInfo.set(c.id, { ...c, kind: "country" });
+    for (const s of subregions) anchorInfo.set(s.id, { ...s, kind: "sub" });
+    for (const c of countries) anchorInfo.set(c.id, { ...c, kind: "country" });
 
     const vols = [...byAnchor.values()].map((evs) => evs.reduce((s, e) => s + e.volume, 0));
     const maxVol = Math.max(1, ...vols);
@@ -134,8 +217,8 @@ export default function WorldMap({
       const pt = projection([info.lon, info.lat]);
       if (!pt) continue;
       const volume = evs.reduce((s, e) => s + e.volume, 0);
-      const base = countryMode ? 7 : 9;
-      const span = countryMode ? 20 : 26;
+      const base = info.kind === "region" ? 9 : info.kind === "sub" ? 8 : 7;
+      const span = info.kind === "region" ? 26 : info.kind === "sub" ? 23 : 20;
       out.push({
         id: aid,
         name: info.name,
@@ -147,10 +230,11 @@ export default function WorldMap({
         volume,
         maxMove: Math.max(0, ...evs.flatMap((e) => e.markets.map((m) => Math.abs(m.change24h ?? 0)))),
         hasBets: evs.some((e) => betEventIds.has(e.id)),
+        soleEventId: evs.length === 1 ? evs[0].id : null,
       });
     }
-    return out.sort((a, b) => b.r - a.r);
-  }, [visibleEvents, regions, countries, regionOfCountry, projection, countryMode, betEventIds]);
+    return { bubbles: out.sort((a, b) => b.r - a.r), anchorOf };
+  }, [visibleEvents, regions, subregions, countries, countryMeta, regionOfCountry, projection, level, betEventIds]);
 
   // ── focus/pan on selected event ─────────────────────────────────────────────
   const focusPoint = useMemo(() => {
@@ -164,9 +248,9 @@ export default function WorldMap({
   }, [focusEvent, regionOfCountry, countries, regions, projection]);
 
   // halo sits on whichever bubble holds the event at the current zoom, drawn
-  // OVER the bubbles and larger than them (it used to hide underneath)
+  // OVER the bubbles and larger than them
   const focusAnchorId = focusEvent?.region
-    ? (countryMode ? anchorCountry(focusEvent, regionOfCountry) : null) ?? focusEvent.region
+    ? anchorOf.get(focusEvent.id) ?? focusEvent.region
     : null;
   const focusBubble = focusAnchorId ? bubbles.find((b) => b.id === focusAnchorId) : null;
   const focusHalo = focusBubble
@@ -174,12 +258,13 @@ export default function WorldMap({
     : focusAnchorId && focusPoint
       ? { x: focusPoint[0], y: focusPoint[1], r: 20 }
       : null;
+  const focusBet = focusEvent ? betCards.get(focusEvent.id) : undefined;
 
   useEffect(() => {
     if (!focusPoint) return;
     setAnimate(true);
     setT((prev) => {
-      const k = Math.max(prev.k, 2.6);
+      const k = Math.max(prev.k, K_COUNTRY + 0.2); // land at country level
       return clampTransform({
         k,
         tx: W / 2 - focusPoint[0] * k,
@@ -274,11 +359,15 @@ export default function WorldMap({
           ))}
 
           {bubbles.map((b) => {
-            // country bubbles filter with a "country:" prefix
-            const filterId = b.kind === "region" ? b.id : `country:${b.id}`;
+            // sub/country bubbles filter with a namespaced prefix
+            const filterId =
+              b.kind === "region" ? b.id : b.kind === "sub" ? `sub:${b.id}` : `country:${b.id}`;
             const active = selectedRegion === filterId;
             const hot = b.maxMove >= 0.05;
             const r = b.r * inv;
+            // bets mode: a geography holding a single bet shows its card instead
+            const soleBet =
+              filter === "bets" && b.soleEventId ? betCards.get(b.soleEventId) : undefined;
             return (
               <g
                 key={`${b.kind}:${b.id}`}
@@ -294,23 +383,40 @@ export default function WorldMap({
                     (hot ? `\nlargest 24h move: ${(b.maxMove * 100).toFixed(1)}pts` : "") +
                     (b.hasBets ? "\n$ you have bets here" : "")}
                 </title>
-                <circle r={r} className="bubble-fill" />
-                <circle r={r} className="bubble-ring" />
-                {b.hasBets && <circle r={r + 3 * inv} className="bubble-bets" style={{ strokeWidth: 1.6 * inv }} />}
-                <text dy="0.35em" className="bubble-count" style={{ fontSize: 11 * inv }}>
-                  {b.count}
-                </text>
-                {(b.r >= 16 || countryMode) && (
-                  <text dy={r + 11 * inv} className="bubble-name" style={{ fontSize: 9 * inv }}>
-                    {b.name}
-                  </text>
+                {soleBet ? (
+                  <>
+                    <circle r={6 * inv} className="bubble-fill" />
+                    <circle r={6 * inv} className="bubble-bets" style={{ strokeWidth: 1.6 * inv }} />
+                    <BetCardG card={soleBet} inv={inv} />
+                  </>
+                ) : (
+                  <>
+                    <circle r={r} className="bubble-fill" />
+                    <circle r={r} className="bubble-ring" />
+                    {b.hasBets && <circle r={r + 3 * inv} className="bubble-bets" style={{ strokeWidth: 1.6 * inv }} />}
+                    <text dy="0.35em" className="bubble-count" style={{ fontSize: 11 * inv }}>
+                      {b.count}
+                    </text>
+                    {(b.r >= 16 || level > 0) && (
+                      <text dy={r + 11 * inv} className="bubble-name" style={{ fontSize: 9 * inv }}>
+                        {b.name}
+                      </text>
+                    )}
+                  </>
                 )}
               </g>
             );
           })}
 
           {focusHalo && (
-            <circle cx={focusHalo.x} cy={focusHalo.y} r={focusHalo.r * inv} className="focus-halo" />
+            <>
+              <circle cx={focusHalo.x} cy={focusHalo.y} r={focusHalo.r * inv} className="focus-halo" />
+              {focusBet && (
+                <g transform={`translate(${focusHalo.x + focusHalo.r * inv},${focusHalo.y})`}>
+                  <BetCardG card={focusBet} inv={inv} />
+                </g>
+              )}
+            </>
           )}
         </g>
       </svg>
@@ -346,14 +452,17 @@ export default function WorldMap({
             <button className="chip chip-active" onClick={() => onSelectRegion(null)}>
               ✕ {selectedRegion.startsWith("country:")
                 ? countries.find((c) => c.id === selectedRegion.slice(8))?.name ?? "filter"
-                : regions.find((r) => r.id === selectedRegion)?.name ?? "filter"}
+                : selectedRegion.startsWith("sub:")
+                  ? subregions.find((s) => s.id === selectedRegion.slice(4))?.name ?? "filter"
+                  : regions.find((r) => r.id === selectedRegion)?.name ?? "filter"}
             </button>
           )}
         </div>
         <div className="map-filter">
           <span className="map-hint">
-            {countryMode ? "country view" : "region view"} · scroll to zoom · drag to pan
-            {" · "}<span className="disputed-key">– –</span> disputed borders
+            {level === 2 ? "country view" : level === 1 ? "subregion view" : "region view"}
+            {" · scroll to zoom · drag to pan · "}
+            <span className="disputed-key">– –</span> disputed borders
           </span>
           {t.k > 1.01 && (
             <button className="chip" onClick={resetView}>⌂ reset</button>

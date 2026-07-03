@@ -60,103 +60,114 @@ TAG_TO_CATEGORY = [
 ]
 
 # ── Region inference ──────────────────────────────────────────────────────────
-# Order matters: more specific regions first. Each entry:
-#   (region_id, display_name, lat, lon, tag_keywords, title_regex)
+# Top-level regions of the 3-level map hierarchy (region → subregion → country).
+# Used as FALLBACK when no country matches the title; order matters (specific
+# first). Each entry: (region_id, display_name, lat, lon, tag_keywords, regex)
 REGIONS = [
-    ("taiwan",   "Taiwan Strait",   23.7,  121.0,
-     {"taiwan"}, r"\btaiwan|taipei|lai ching-te|cho jung-tai\b"),
-    ("ukraine",  "Ukraine",         49.0,   32.0,
-     {"ukraine", "ukraine-map", "ukraine-peace-deal", "kupyansk", "donestk", "zelenskyy", "zelensky"},
-     r"\bukrain|donbas|donetsk|crimea|kyiv|zelensk|kostyantynivka|kupiansk\b"),
-    ("iran",     "Iran",            32.4,   53.7,
+    ("mena",     "MENA",            29.0,   44.0,
      {"iran", "us-iran", "trump-iran", "khamenei", "mojtaba", "mojtaba-khamenei",
-      "ayatollah", "iranian-leadership-regime", "reza-pahlavi", "shah"},
-     r"\biran|khamenei|pahlavi|tehran|persian\b"),
-    ("levant",   "Israel / Levant", 32.8,   35.2,
-     {"israel", "lebanon", "hezbollah", "litani", "syria", "gaza", "palestine"},
-     r"\bisrael|lebanon|hezbollah|litani|syria|gaza|beirut|al-sharaa\b"),
-    ("gulf",     "Persian Gulf",    26.5,   52.0,
-     {"strait-of-hormuz", "saudi-arabia", "yemen", "houthis", "qatar", "iraq"},
-     r"\bhormuz|saudi|yemen|houthi|qatar|iraq|uae|emirates\b"),
-    ("korea",    "Korean Peninsula", 38.5, 127.0,
-     {"north-korea", "south-korea"}, r"\bkorea|kim jong\b"),
-    ("china",    "China",           35.0,  105.0,
-     {"china", "xi-jinping"}, r"\bchina|chinese|xi jinping|beijing\b"),
-    ("s_asia",   "South Asia",      25.0,   78.0,
-     {"india", "pakistan"}, r"\bindia|pakistan|kashmir|modi\b"),
-    ("asia_pac", "Asia-Pacific",    12.0,  122.0,
-     {"japan", "philippines", "australia"}, r"\bjapan|philippin|australia|indo-pacific\b"),
-    ("russia",   "Russia",          55.7,   37.6,
-     {"russia", "putin"}, r"\brussia|putin|moscow|kremlin\b"),
-    ("europe",   "Europe",          50.0,   10.0,
-     {"eu", "nato", "europe", "albania", "germany", "france", "uk", "poland", "moldova", "armenia"},
-     r"\bnato\b|\beu\b|europe|albania|german|france|french|britain|moldova|armenia|balkan"),
-    ("latam",    "Latin America",  -10.0,  -60.0,
-     {"venezuela", "cuba", "maduro", "brazil", "mexico", "colombia",
+      "ayatollah", "iranian-leadership-regime", "reza-pahlavi", "shah",
+      "israel", "lebanon", "hezbollah", "litani", "syria", "gaza", "palestine",
+      "strait-of-hormuz", "saudi-arabia", "yemen", "houthis", "qatar", "iraq",
+      "middle-east", "egypt", "libya", "morocco", "sudan"},
+     r"\biran|khamenei|pahlavi|tehran|persian|israel|lebanon|hezbollah|litani"
+     r"|syria|gaza|beirut|al-sharaa|hormuz|saudi|yemen|houthi|qatar|iraq"
+     r"|uae|emirates|egypt|libya|morocco|sudan|afghan|taliban|pakistan\b"),
+    ("e_asia",   "East Asia",       33.0,  115.0,
+     {"taiwan", "china", "xi-jinping", "north-korea", "south-korea", "japan"},
+     r"\btaiwan|taipei|lai ching-te|china|chinese|xi jinping|beijing"
+     r"|korea|kim jong|pyongyang|seoul|japan|tokyo\b"),
+    ("europe",   "Europe",          50.0,   20.0,
+     {"ukraine", "ukraine-map", "ukraine-peace-deal", "kupyansk", "donestk",
+      "zelenskyy", "zelensky", "russia", "putin", "eu", "nato", "europe",
+      "albania", "germany", "france", "uk", "poland", "moldova", "armenia"},
+     r"\bukrain|donbas|donetsk|crimea|kyiv|zelensk|kostyantynivka|kupiansk"
+     r"|russia|putin|moscow|kremlin|\bnato\b|\beu\b|europe|albania|german"
+     r"|france|french|britain|moldova|armenia|balkan|turkey|erdogan"),
+    ("s_asia",   "South Asia",      22.0,   79.0,
+     {"india"}, r"\bindia|kashmir|modi|delhi\b"),
+    ("sea",      "Southeast Asia",  12.0,  122.0,
+     {"philippines"}, r"\bphilippin|manila|south china sea\b"),
+    ("oceania",  "Oceania",        -25.0,  134.0,
+     {"australia"}, r"\baustralia|canberra\b"),
+    ("latam",    "LATAM",          -10.0,  -60.0,
+     {"venezuela", "cuba", "maduro", "brazil", "mexico", "colombia", "panama",
       "communist-party-of-cuba", "miguel-diaz-canel", "castro"},
-     r"\bvenezuela|cuba|maduro|brazil|mexico|colombia|bolivia|argentina\b"),
-    ("africa",   "Africa",           5.0,   20.0,
-     {"africa", "morocco", "nigeria", "ethiopia", "sudan", "egypt", "libya"},
-     r"\bafrica|morocco|nigeria|ethiopia|sudan|egypt|libya|sahel\b"),
+     r"\bvenezuela|cuba|maduro|brazil|mexico|colombia|bolivia|argentina|panama\b"),
+    ("africa",   "Sub-Saharan Africa", 5.0, 20.0,
+     {"africa", "nigeria", "ethiopia"}, r"\bafrica|nigeria|ethiopia|sahel\b"),
     ("n_america", "North America",  45.0, -100.0,
-     {"canada", "greenland", "panama"}, r"\bcanada|greenland|panama\b"),
+     {"canada", "greenland"}, r"\bcanada|greenland\b"),
+]
+
+# ── Subregions (middle map level; regions without entries split straight to
+# countries, matching the 4th-pass design doc tree) ───────────────────────────
+SUBREGIONS = [
+    ("levant",    "mena",  "Levant",            33.5,   36.0),
+    ("arabia",    "mena",  "Arabian Peninsula", 24.0,   45.0),
+    ("n_africa",  "mena",  "North Africa",      28.0,   15.0),
+    ("iran",      "mena",  "Iran",              32.4,   53.7),
+    ("stans",     "mena",  "Stan Region",       33.0,   68.0),
+    ("caribbean", "latam", "Caribbean",         21.5,  -79.0),
+    ("c_america", "latam", "Central America",   17.0,  -95.0),
+    ("s_america", "latam", "South America",    -15.0,  -60.0),
 ]
 
 
-# ── Country inference (for zoomed-in map bubbles) ─────────────────────────────
-# country_id: ISO-ish slug; (name, lat, lon, home_region, keyword regex over
-# title+tags). home_region ties each country to a REGIONS id so zoomed-in
-# bubble counts split region totals exactly (no cross-region hopping).
+# ── Country inference (deepest map level) ─────────────────────────────────────
+# (id, name, lat, lon, home_region, subregion_or_None, keyword regex).
+# home_region/subregion tie each country into the hierarchy so bubble counts
+# split parent totals exactly at every zoom level.
 COUNTRIES = [
-    ("TWN", "Taiwan",        23.7,  121.0, "taiwan",    r"\btaiwan|taipei\b"),
-    ("UKR", "Ukraine",       49.0,   32.0, "ukraine",   r"\bukrain|kyiv|zelensk|donbas|donetsk|crimea|kostyantynivka|kupiansk|lyman|kharkiv|sumy|zaporizh"),
-    ("RUS", "Russia",        58.0,   60.0, "russia",    r"\brussia|putin|moscow|kremlin\b"),
-    ("IRN", "Iran",          32.4,   53.7, "iran",      r"\biran|khamenei|pahlavi|tehran\b"),
-    ("ISR", "Israel",        31.4,   35.0, "levant",    r"\bisrael|netanyahu|idf\b"),
-    ("LBN", "Lebanon",       33.9,   35.9, "levant",    r"\blebanon|hezbollah|litani|beirut\b"),
-    ("SYR", "Syria",         35.0,   38.5, "levant",    r"\bsyria|damascus|al-sharaa\b"),
-    ("CHN", "China",         35.0,  105.0, "china",     r"\bchina|chinese|xi jinping|beijing\b"),
-    ("PRK", "North Korea",   40.0,  127.0, "korea",     r"\bnorth korea|kim jong|dprk|pyongyang\b"),
-    ("KOR", "South Korea",   36.5,  128.0, "korea",     r"\bsouth korea|seoul\b"),
-    ("IND", "India",         22.0,   79.0, "s_asia",    r"\bindia|modi|delhi\b"),
-    ("PAK", "Pakistan",      30.0,   69.5, "s_asia",    r"\bpakistan|islamabad\b"),
-    ("JPN", "Japan",         36.5,  138.5, "asia_pac",  r"\bjapan|tokyo\b"),
-    ("PHL", "Philippines",   12.5,  122.5, "asia_pac",  r"\bphilippin|manila\b"),
-    ("AUS", "Australia",    -25.0,  134.0, "asia_pac",  r"\baustralia|canberra|albanese\b"),
-    ("SAU", "Saudi Arabia",  24.0,   45.0, "gulf",      r"\bsaudi|riyadh|mbs\b"),
-    ("YEM", "Yemen",         15.5,   47.5, "gulf",      r"\byemen|houthi|sanaa\b"),
-    ("IRQ", "Iraq",          33.0,   43.5, "gulf",      r"\biraq|baghdad\b"),
-    ("QAT", "Qatar",         25.3,   51.2, "gulf",      r"\bqatar|doha\b"),
-    ("ARE", "UAE",           24.0,   54.0, "gulf",      r"\buae\b|\bemirates|abu dhabi|dubai\b"),
-    ("EGY", "Egypt",         26.5,   30.0, "africa",    r"\begypt|cairo|sisi\b"),
-    ("TUR", "Turkey",        39.0,   35.0, "europe",    r"\bturkey|türkiye|erdogan|ankara\b"),
-    ("VEN", "Venezuela",      7.5,  -66.0, "latam",     r"\bvenezuela|maduro|caracas|delcy\b"),
-    ("CUB", "Cuba",          21.5,  -79.5, "latam",     r"\bcuba|havana|diaz-canel|castro\b"),
-    ("BRA", "Brazil",       -10.5,  -52.5, "latam",     r"\bbrazil|lula|brasilia\b"),
-    ("MEX", "Mexico",        23.5, -102.5, "latam",     r"\bmexico|sheinbaum\b"),
-    ("COL", "Colombia",       4.0,  -73.0, "latam",     r"\bcolombia|bogota|petro\b"),
-    ("ARG", "Argentina",    -35.0,  -65.0, "latam",     r"\bargentina|milei\b"),
-    ("USA", "United States", 39.5,  -98.5, "n_america", r"\bunited states\b|\bu\.?s\.?a?\b|\bwhite house|pentagon\b"),
-    ("CAN", "Canada",        58.0, -103.0, "n_america", r"\bcanada|ottawa|carney\b"),
-    ("GRL", "Greenland",     72.0,  -41.0, "n_america", r"\bgreenland|nuuk\b"),
-    ("PAN", "Panama",         8.5,  -80.5, "n_america", r"\bpanama\b"),
-    ("GBR", "United Kingdom", 53.5,  -2.5, "europe",    r"\bbritain|british|\buk\b|united kingdom|starmer|london\b"),
-    ("FRA", "France",        46.5,    2.5, "europe",    r"\bfrance|french|macron|paris\b"),
-    ("DEU", "Germany",       51.0,   10.0, "europe",    r"\bgerman|merz|berlin\b"),
-    ("POL", "Poland",        52.0,   19.5, "europe",    r"\bpoland|warsaw|tusk\b"),
-    ("MDA", "Moldova",       47.0,   28.5, "europe",    r"\bmoldova|transnistria\b"),
-    ("BLR", "Belarus",       53.5,   28.0, "europe",    r"\bbelarus|lukashenko\b"),
-    ("ARM", "Armenia",       40.3,   45.0, "europe",    r"\barmenia|yerevan\b"),
-    ("AZE", "Azerbaijan",    40.3,   47.7, "europe",    r"\bazerbaijan|baku|aliyev\b"),
-    ("GEO", "Georgia",       42.0,   43.5, "europe",    r"\bgeorgia(n)? (govern|parliament|protest)|tbilisi\b"),
-    ("ALB", "Albania",       41.0,   20.0, "europe",    r"\balbania|edi rama|tirana\b"),
-    ("SRB", "Serbia",        44.0,   21.0, "europe",    r"\bserbia|vucic|belgrade|kosovo\b"),
-    ("MAR", "Morocco",       32.0,   -6.0, "africa",    r"\bmorocco|rabat|akhannouch\b"),
-    ("NGA", "Nigeria",        9.5,    8.0, "africa",    r"\bnigeria|abuja|tinubu\b"),
-    ("ETH", "Ethiopia",       9.0,   39.5, "africa",    r"\bethiopia|addis ababa|abiy\b"),
-    ("SDN", "Sudan",         15.5,   30.0, "africa",    r"\bsudan|khartoum|rsf\b"),
-    ("LBY", "Libya",         27.0,   17.0, "africa",    r"\blibya|tripoli|haftar\b"),
-    ("AFG", "Afghanistan",   33.8,   66.0, "s_asia",    r"\bafghan|taliban|kabul\b"),
+    ("TWN", "Taiwan",        23.7,  121.0, "e_asia",   None,        r"\btaiwan|taipei\b"),
+    ("UKR", "Ukraine",       49.0,   32.0, "europe",   None,        r"\bukrain|kyiv|zelensk|donbas|donetsk|crimea|kostyantynivka|kupiansk|lyman|kharkiv|sumy|zaporizh"),
+    ("RUS", "Russia",        58.0,   60.0, "europe",   None,        r"\brussia|putin|moscow|kremlin\b"),
+    ("IRN", "Iran",          32.4,   53.7, "mena",     "iran",      r"\biran|khamenei|pahlavi|tehran\b"),
+    ("ISR", "Israel",        31.4,   35.0, "mena",     "levant",    r"\bisrael|netanyahu|idf\b"),
+    ("LBN", "Lebanon",       33.9,   35.9, "mena",     "levant",    r"\blebanon|hezbollah|litani|beirut\b"),
+    ("SYR", "Syria",         35.0,   38.5, "mena",     "levant",    r"\bsyria|damascus|al-sharaa\b"),
+    ("TUR", "Turkey",        39.0,   35.0, "mena",     "levant",    r"\bturkey|türkiye|erdogan|ankara\b"),
+    ("CHN", "China",         35.0,  105.0, "e_asia",   None,        r"\bchina|chinese|xi jinping|beijing\b"),
+    ("PRK", "North Korea",   40.0,  127.0, "e_asia",   None,        r"\bnorth korea|kim jong|dprk|pyongyang\b"),
+    ("KOR", "South Korea",   36.5,  128.0, "e_asia",   None,        r"\bsouth korea|seoul\b"),
+    ("JPN", "Japan",         36.5,  138.5, "e_asia",   None,        r"\bjapan|tokyo\b"),
+    ("IND", "India",         22.0,   79.0, "s_asia",   None,        r"\bindia|modi|delhi\b"),
+    ("PAK", "Pakistan",      30.0,   69.5, "mena",     "stans",     r"\bpakistan|islamabad\b"),
+    ("AFG", "Afghanistan",   33.8,   66.0, "mena",     "stans",     r"\bafghan|taliban|kabul\b"),
+    ("PHL", "Philippines",   12.5,  122.5, "sea",      None,        r"\bphilippin|manila\b"),
+    ("AUS", "Australia",    -25.0,  134.0, "oceania",  None,        r"\baustralia|canberra|albanese\b"),
+    ("SAU", "Saudi Arabia",  24.0,   45.0, "mena",     "arabia",    r"\bsaudi|riyadh|mbs\b"),
+    ("YEM", "Yemen",         15.5,   47.5, "mena",     "arabia",    r"\byemen|houthi|sanaa\b"),
+    ("IRQ", "Iraq",          33.0,   43.5, "mena",     "arabia",    r"\biraq|baghdad\b"),
+    ("QAT", "Qatar",         25.3,   51.2, "mena",     "arabia",    r"\bqatar|doha\b"),
+    ("ARE", "UAE",           24.0,   54.0, "mena",     "arabia",    r"\buae\b|\bemirates|abu dhabi|dubai\b"),
+    ("EGY", "Egypt",         26.5,   30.0, "mena",     "n_africa",  r"\begypt|cairo|sisi\b"),
+    ("MAR", "Morocco",       32.0,   -6.0, "mena",     "n_africa",  r"\bmorocco|rabat|akhannouch\b"),
+    ("LBY", "Libya",         27.0,   17.0, "mena",     "n_africa",  r"\blibya|tripoli|haftar\b"),
+    ("SDN", "Sudan",         15.5,   30.0, "mena",     "n_africa",  r"\bsudan|khartoum|rsf\b"),
+    ("VEN", "Venezuela",      7.5,  -66.0, "latam",    "s_america", r"\bvenezuela|maduro|caracas|delcy\b"),
+    ("BRA", "Brazil",       -10.5,  -52.5, "latam",    "s_america", r"\bbrazil|lula|brasilia\b"),
+    ("COL", "Colombia",       4.0,  -73.0, "latam",    "s_america", r"\bcolombia|bogota|petro\b"),
+    ("ARG", "Argentina",    -35.0,  -65.0, "latam",    "s_america", r"\bargentina|milei\b"),
+    ("CUB", "Cuba",          21.5,  -79.5, "latam",    "caribbean", r"\bcuba|havana|diaz-canel|castro\b"),
+    ("MEX", "Mexico",        23.5, -102.5, "latam",    "c_america", r"\bmexico|sheinbaum\b"),
+    ("PAN", "Panama",         8.5,  -80.5, "latam",    "c_america", r"\bpanama\b"),
+    ("USA", "United States", 39.5,  -98.5, "n_america", None,       r"\bunited states\b|\bu\.?s\.?a?\b|\bwhite house|pentagon\b"),
+    ("CAN", "Canada",        58.0, -103.0, "n_america", None,       r"\bcanada|ottawa|carney\b"),
+    ("GRL", "Greenland",     72.0,  -41.0, "n_america", None,       r"\bgreenland|nuuk\b"),
+    ("GBR", "United Kingdom", 53.5,  -2.5, "europe",   None,        r"\bbritain|british|\buk\b|united kingdom|starmer|london\b"),
+    ("FRA", "France",        46.5,    2.5, "europe",   None,        r"\bfrance|french|macron|paris\b"),
+    ("DEU", "Germany",       51.0,   10.0, "europe",   None,        r"\bgerman|merz|berlin\b"),
+    ("POL", "Poland",        52.0,   19.5, "europe",   None,        r"\bpoland|warsaw|tusk\b"),
+    ("MDA", "Moldova",       47.0,   28.5, "europe",   None,        r"\bmoldova|transnistria\b"),
+    ("BLR", "Belarus",       53.5,   28.0, "europe",   None,        r"\bbelarus|lukashenko\b"),
+    ("ARM", "Armenia",       40.3,   45.0, "europe",   None,        r"\barmenia|yerevan\b"),
+    ("AZE", "Azerbaijan",    40.3,   47.7, "europe",   None,        r"\bazerbaijan|baku|aliyev\b"),
+    ("GEO", "Georgia",       42.0,   43.5, "europe",   None,        r"\bgeorgia(n)? (govern|parliament|protest)|tbilisi\b"),
+    ("ALB", "Albania",       41.0,   20.0, "europe",   None,        r"\balbania|edi rama|tirana\b"),
+    ("SRB", "Serbia",        44.0,   21.0, "europe",   None,        r"\bserbia|vucic|belgrade|kosovo\b"),
+    ("NGA", "Nigeria",        9.5,    8.0, "africa",   None,        r"\bnigeria|abuja|tinubu\b"),
+    ("ETH", "Ethiopia",       9.0,   39.5, "africa",   None,        r"\bethiopia|addis ababa|abiy\b"),
 ]
 
 _WS_RE = re.compile(
@@ -182,29 +193,31 @@ def group_key(title: str) -> str:
     return t
 
 
-def infer_countries(tag_slugs: list[str], title: str, region: Optional[str]) -> list[str]:
-    """Country ids matched from the title/tags.
+def infer_geo(tag_slugs: list[str], title: str) -> tuple[Optional[str], list[str]]:
+    """(region, country ids) for an event.
 
-    Title matches outrank tag matches (Polymarket tags cross-pollute, e.g. a
-    NATO event tagged "greenland"); tag-only matches outside the event's region
-    are dropped entirely. Countries in the event's own region sort first so
-    countries[0] is a valid zoomed-in map anchor."""
+    The first TITLE-matched country decides the region (title outranks tags —
+    Polymarket tags cross-pollute, e.g. a NATO event tagged "greenland");
+    events without a title country fall back to the REGIONS tag/regex pass.
+    Tag-only country matches outside the region are dropped, and own-region
+    countries sort first so countries[0] is a valid zoomed-in map anchor."""
     lower_title = title.lower()
     tag_text = " ".join(tag_slugs)
     title_hits: list[tuple[str, str]] = []
     tag_hits: list[tuple[str, str]] = []
-    for cid, _, _, _, home, pattern in COUNTRIES:
+    for cid, _, _, _, home, _, pattern in COUNTRIES:
         if re.search(pattern, lower_title):
             title_hits.append((cid, home))
         elif re.search(pattern, tag_text):
             tag_hits.append((cid, home))
+    region = title_hits[0][1] if title_hits else infer_region(tag_slugs, title)
     hits = title_hits + [
         (cid, home) for cid, home in tag_hits
         if region is None or home == region
     ]
     if region:
         hits.sort(key=lambda ch: ch[1] != region)  # stable: own-region first
-    return [cid for cid, _ in hits]
+    return region, [cid for cid, _ in hits]
 
 
 def infer_category(tag_slugs: list[str]) -> str:
@@ -347,14 +360,14 @@ def build_catalog(tags: list[str], min_vol: float) -> dict:
 
             tag_slugs = [t.get("slug", "") for t in (e.get("tags") or [])]
             title = (e.get("title") or "Unknown").strip()
-            region = infer_region(tag_slugs, title)
+            region, countries = infer_geo(tag_slugs, title)
             events_out.append({
                 "id":        eid,
                 "slug":      e.get("slug", ""),
                 "title":     title,
                 "category":  infer_category(tag_slugs),
                 "region":    region,
-                "countries": infer_countries(tag_slugs, title, region),
+                "countries": countries,
                 "groupKey":  group_key(title),
                 "type":      classify(markets),
                 "tags":      [s for s in tag_slugs if s and s != "all"],
@@ -375,9 +388,14 @@ def build_catalog(tags: list[str], min_vol: float) -> dict:
             {"id": rid, "name": name, "lat": lat, "lon": lon}
             for rid, name, lat, lon, _, _ in REGIONS
         ],
+        "subregions": [
+            {"id": sid, "region": region, "name": name, "lat": lat, "lon": lon}
+            for sid, region, name, lat, lon in SUBREGIONS
+        ],
         "countries": [
-            {"id": cid, "name": name, "lat": lat, "lon": lon, "region": home}
-            for cid, name, lat, lon, home, _ in COUNTRIES
+            {"id": cid, "name": name, "lat": lat, "lon": lon,
+             "region": home, "subregion": sub}
+            for cid, name, lat, lon, home, sub, _ in COUNTRIES
         ],
         "events": events_out,
     }

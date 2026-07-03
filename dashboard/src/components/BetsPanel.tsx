@@ -67,37 +67,50 @@ export default function BetsPanel({
       </div>
 
       <div className="watch-list">
-        {rows.map(({ bet, hit, pnl }) => (
-          <div
-            key={bet.id}
-            className="bet-item"
-            onClick={() => bet.eventId && onSelectEvent(bet.eventId)}
-          >
-            <div className="row-main">
-              <div className="row-title">{bet.label}</div>
-              <div className="row-meta">
-                {bet.side} · {bet.shares} @ {bet.entryPrice.toFixed(1)}¢
-                {" → "}
-                {hit ? `${pnl.currentPrice.toFixed(1)}¢` : "market closed?"}
-              </div>
-            </div>
-            <div className="row-price">
-              <div className={`row-yes ${pnl.pnl >= 0 ? "up" : "down"}`}>
-                {pnl.pnl >= 0 ? "+" : "−"}${Math.abs(pnl.pnl).toFixed(2)}
-              </div>
-              <div className={`row-chg ${pnl.pnl >= 0 ? "up" : "down"}`}>
-                {pnl.pnlPct >= 0 ? "+" : ""}{pnl.pnlPct.toFixed(0)}%
-              </div>
-            </div>
-            <button
-              className="star"
-              title="Delete bet record"
-              onClick={(e) => { e.stopPropagation(); onRemove(bet.id); }}
+        {rows.map(({ bet, hit, pnl }) => {
+          const up = pnl.pnl >= 0;
+          return (
+            <div
+              key={bet.id}
+              className={`bet-card ${up ? "bet-card-up" : "bet-card-down"}`}
+              onClick={() => bet.eventId && onSelectEvent(bet.eventId)}
             >
-              🗑
-            </button>
-          </div>
-        ))}
+              <div className="bet-card-head">
+                <span className="bet-card-title">{bet.label}</span>
+                <button
+                  className="star"
+                  title="Delete bet record"
+                  onClick={(e) => { e.stopPropagation(); onRemove(bet.id); }}
+                >
+                  🗑
+                </button>
+              </div>
+              <div className="bet-card-mid">
+                <span className={`side-badge ${bet.side === "YES" ? "side-yes" : "side-no"}`}>
+                  {bet.side}
+                </span>
+                <span>{bet.shares} @ {bet.entryPrice.toFixed(1)}¢</span>
+                <span className="muted">cost ${pnl.cost.toFixed(2)}</span>
+              </div>
+              <div className="bet-card-row">
+                <span className="muted">Current</span>
+                <span>
+                  {hit ? `${pnl.currentPrice.toFixed(1)}¢ · $${pnl.value.toFixed(2)}` : "market closed?"}
+                </span>
+              </div>
+              <div className="bet-card-row">
+                <span className="muted">Return</span>
+                <b className={up ? "up" : "down"}>
+                  {up ? "+" : "−"}${Math.abs(pnl.pnl).toFixed(2)} ({pnl.pnlPct >= 0 ? "+" : ""}
+                  {pnl.pnlPct.toFixed(1)}%)
+                </b>
+              </div>
+              <div className="bet-card-date">
+                opened {bet.openedAt.slice(0, 10)}
+              </div>
+            </div>
+          );
+        })}
         {!bets.length && (
           <div className="empty">
             Log bets from any market's <b>$</b> button. Records stay in this

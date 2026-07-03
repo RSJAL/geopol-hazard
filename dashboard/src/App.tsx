@@ -3,8 +3,9 @@ import type { Bet, Catalog, CatalogEvent, CatalogMarket, LivePriceMap, NewsData 
 import { fetchCatalog, fetchLivePrices, fetchNews } from "./lib/api";
 import { catalogStats, fmtVolume } from "./lib/analytics";
 import { loadWatchlist, persist } from "./lib/watchlist";
-import { loadBets, persistBets } from "./lib/bets";
-import WorldMap, { type MapFilter } from "./components/WorldMap";
+import { betPnl, loadBets, persistBets } from "./lib/bets";
+import WorldMap, { type BetMapCard, type MapFilter } from "./components/WorldMap";
+import NewsFeed from "./components/NewsFeed";
 import CatalogPanel from "./components/CatalogPanel";
 import EventDetail from "./components/EventDetail";
 import WatchlistPanel from "./components/WatchlistPanel";
@@ -162,6 +163,38 @@ export default function App() {
     [catalog, watchlist],
   );
 
+  /** eventId → bet summary for the personalized map cards (first bet wins) */
+  const betCards = useMemo(() => {
+    const m = new Map<string, BetMapCard>();
+    for (const b of bets) {
+      if (!b.eventId || m.has(b.eventId)) continue;
+      const hit = marketIndex.get(b.marketId);
+      const pnl = betPnl(b, hit?.market, live);
+      m.set(b.eventId, {
+        title: hit?.event.title ?? b.label,
+        side: b.side,
+        shares: b.shares,
+        entry: b.entryPrice,
+        current: pnl.currentPrice,
+        pnl: pnl.pnl,
+        pnlPct: pnl.pnlPct,
+      });
+    }
+    return m;
+  }, [bets, marketIndex, live]);
+
+  /** 3 most relevant articles for the selected event (rail mini newsfeed) */
+  const railNews = useMemo(() => {
+    if (!news || !selected) return [];
+    const direct = news.articles.filter((a) => a.eventIds.includes(selected.id));
+    if (direct.length >= 3 || !selected.region) return direct.slice(0, 3);
+    const seen = new Set(direct.map((a) => a.id));
+    const regional = news.articles.filter(
+      (a) => !seen.has(a.id) && a.regions.includes(selected.region!),
+    );
+    return [...direct, ...regional].slice(0, 3);
+  }, [news, selected]);
+
   if (error) {
     return (
       <div className="boot-error">
@@ -262,7 +295,9 @@ export default function App() {
             <WorldMap
               events={catalog.events}
               regions={catalog.regions}
+              subregions={catalog.subregions ?? []}
               countries={catalog.countries}
+              betCards={betCards}
               selectedRegion={regionFilter}
               onSelectRegion={setRegionFilter}
               filter={mapMode}
@@ -312,6 +347,15 @@ export default function App() {
                 onSelectEvent={goEvent}
               />
             )}
+            {selected && railNews.length > 0 && (
+              <div className="rail-news">
+                <div className="panel-head">
+                  <span className="panel-title">📰 Related news</span>
+                  <a className="panel-sub" href={`#/event/${selected.id}`}>all →</a>
+                </div>
+                <NewsFeed articles={railNews} limit={3} />
+              </div>
+            )}
           </div>
         </main>
       )}
@@ -319,7 +363,7 @@ export default function App() {
       <footer className="footer">
         Data: Polymarket Gamma + CLOB APIs · news: whitelisted RSS
         {news && ` (${news.sources.join(", ")})`} · snapshot {catalog.generatedAt} ·
-        implied daily = cumulative YES% ÷ days to deadline · bets stay in this browser ·
+        daily odds = 1 − (1 − total odds)^(1/days) · bets stay in this browser ·
         not investment advice
       </footer>
     </div>

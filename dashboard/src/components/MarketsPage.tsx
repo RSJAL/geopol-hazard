@@ -105,7 +105,7 @@ function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
         <thead>
           <tr>
             <th>Deadline</th><th className="num">YES</th>
-            <th className="num">Impl/d</th>
+            <th className="num" title="Implied daily odds: 1 − (1−P)^(1/days)">Daily</th>
             <th className="viz"></th>
           </tr>
         </thead>

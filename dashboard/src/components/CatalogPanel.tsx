@@ -43,6 +43,10 @@ export default function CatalogPanel({
     () => new Map(catalog.countries.map((c) => [c.id, c.region])),
     [catalog],
   );
+  const subregionOfCountry = useMemo(
+    () => new Map(catalog.countries.map((c) => [c.id, c.subregion ?? null])),
+    [catalog],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -55,6 +59,9 @@ export default function CatalogPanel({
       if (regionFilter?.startsWith("country:")) {
         // same anchor rule as the map bubbles, so counts match the list
         if (anchorCountry(e, regionOfCountry) !== regionFilter.slice(8)) return false;
+      } else if (regionFilter?.startsWith("sub:")) {
+        const cid = anchorCountry(e, regionOfCountry);
+        if (!cid || subregionOfCountry.get(cid) !== regionFilter.slice(4)) return false;
       } else if (regionFilter && regionFilter !== "__global__" && e.region !== regionFilter) {
         return false;
       }
@@ -74,7 +81,7 @@ export default function CatalogPanel({
       case "endDate":   evs = evs.sort((a, b) => a.endDate.localeCompare(b.endDate)); break;
     }
     return evs;
-  }, [catalog, query, category, type, sort, watchOnly, watchlist, regionFilter, regionOfCountry, mapMode, betEventIds]);
+  }, [catalog, query, category, type, sort, watchOnly, watchlist, regionFilter, regionOfCountry, subregionOfCountry, mapMode, betEventIds]);
 
   return (
     <div className="catalog-panel">

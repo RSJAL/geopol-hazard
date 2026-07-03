@@ -61,19 +61,20 @@ GNEWS_QUERIES = [
 
 # ── Region tagging: keyword regex → region id (must mirror catalog regions) ──
 REGION_PATTERNS = [
-    ("taiwan",   r"\btaiwan|taipei\b"),
-    ("ukraine",  r"\bukrain|kyiv|zelensk|donbas|donetsk|crimea|kharkiv\b"),
-    ("iran",     r"\biran|khamenei|tehran|pahlavi\b"),
-    ("levant",   r"\bisrael|lebanon|hezbollah|syria|gaza|beirut|netanyahu\b"),
-    ("gulf",     r"\bhormuz|saudi|yemen|houthi|qatar|iraq|gulf\b"),
-    ("korea",    r"\bnorth korea|south korea|kim jong|pyongyang|seoul\b"),
-    ("china",    r"\bchina|chinese|beijing|xi jinping\b"),
-    ("s_asia",   r"\bindia|pakistan|kashmir\b"),
-    ("asia_pac", r"\bphilippin|japan|south china sea|indo-pacific|australia\b"),
-    ("russia",   r"\brussia|putin|moscow|kremlin\b"),
-    ("europe",   r"\bnato\b|\beu\b|europe|germany|france|poland|moldova|baltics\b"),
-    ("latam",    r"\bvenezuela|cuba|maduro|caracas|havana\b"),
-    ("africa",   r"\bafrica|sudan|libya|sahel|nigeria|ethiopia\b"),
+    ("mena",      r"\biran|khamenei|tehran|pahlavi|israel|lebanon|hezbollah|syria"
+                  r"|gaza|beirut|netanyahu|hormuz|saudi|yemen|houthi|qatar|iraq"
+                  r"|gulf|egypt|libya|morocco|sudan|afghan|taliban|pakistan\b"),
+    ("e_asia",    r"\btaiwan|taipei|china|chinese|beijing|xi jinping"
+                  r"|north korea|south korea|kim jong|pyongyang|seoul|japan|tokyo\b"),
+    ("europe",    r"\bukrain|kyiv|zelensk|donbas|donetsk|crimea|kharkiv"
+                  r"|russia|putin|moscow|kremlin"
+                  r"|\bnato\b|\beu\b|europe|germany|france|poland|moldova|baltics\b"),
+    ("s_asia",    r"\bindia|kashmir|modi|delhi\b"),
+    ("sea",       r"\bphilippin|manila|south china sea\b"),
+    ("oceania",   r"\baustralia|canberra\b"),
+    ("latam",     r"\bvenezuela|cuba|maduro|caracas|havana|mexico|panama|brazil|colombia\b"),
+    ("africa",    r"\bafrica|sahel|nigeria|ethiopia\b"),
+    ("n_america", r"\bcanada|greenland\b"),
 ]
 
 # ── Escalation sentiment lexicon ──────────────────────────────────────────────
