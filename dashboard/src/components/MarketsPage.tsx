@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Catalog, CatalogEvent, LivePriceMap, NewsData, PricePoint } from "../lib/types";
-import { buildLadder, fmtVolume, liveYes, headlineMarket } from "../lib/analytics";
+import type { Bet, Catalog, CatalogEvent, CatalogMarket, LivePriceMap, NewsData, PricePoint } from "../lib/types";
+import { buildLadder, deadlineLabel, fmtVolume, liveYes, headlineMarket } from "../lib/analytics";
+import { betPnl } from "../lib/bets";
 import { buildGroups, memberLabel, type EventGroup } from "../lib/grouping";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
@@ -8,12 +9,32 @@ import PriceChart, { type Series } from "./PriceChart";
 const COMPARE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a"];
 const COMPARE_MAX = 3;
 
+type MarketsView = "watch" | "bets" | "all";
+
 interface Props {
   catalog: Catalog;
   live: LivePriceMap;
   watchlist: Set<string>;
+  bets: Bet[];
   news: NewsData | null;
   onToggleWatch: (id: string) => void;
+}
+
+/** Compact strip showing a logged bet on a group card. */
+function BetStrip({ bet, market, live }: { bet: Bet; market: CatalogMarket | undefined; live: LivePriceMap }) {
+  const pnl = betPnl(bet, market, live);
+  const up = pnl.pnl >= 0;
+  return (
+    <div className="bet-strip" onClick={(e) => e.stopPropagation()}>
+      <span className={`side-badge ${bet.side === "YES" ? "side-yes" : "side-no"}`}>{bet.side}</span>
+      <span className="muted">{bet.shares} @ {bet.entryPrice.toFixed(1)}¢</span>
+      <span className="strip-cur">now {pnl.currentPrice.toFixed(1)}¢</span>
+      <b className={up ? "up" : "down"}>
+        {up ? "+" : "−"}${Math.abs(pnl.pnl).toFixed(2)} ({pnl.pnlPct >= 0 ? "+" : ""}
+        {pnl.pnlPct.toFixed(1)}%)
+      </b>
+    </div>
+  );
 }
 
 /** Combobox for adding whole market groups to the watchlist. */
@@ -96,47 +117,41 @@ function AddToWatchlist({
   );
 }
 
+/** Uniform YES / NO / Volume table for every event type on group tiles. */
 function MiniLadder({ ev, live }: { ev: CatalogEvent; live: LivePriceMap }) {
-  if (ev.type === "horizon") {
-    const rows = buildLadder(ev, live);
-    return (
-      <table className="ladder mini">
-        <thead>
-          <tr>
-            <th>Deadline</th><th className="num">YES</th>
-            <th className="num">NO</th>
-            <th className="num">Volume</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.endDate}>
-              <td>{r.label}</td>
-              <td className="num">{r.yes.toFixed(1)}%</td>
-              <td className="num muted">{(100 - r.yes).toFixed(1)}%</td>
-              <td className="num muted">{fmtVolume(r.market.volume)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  }
-  const top = [...ev.markets].sort((a, b) => liveYes(b, live) - liveYes(a, live)).slice(0, 4);
+  const rows =
+    ev.type === "horizon"
+      ? buildLadder(ev, live).map((r) => ({ key: r.endDate, label: r.label, market: r.market }))
+      : ev.type === "categorical"
+        ? [...ev.markets]
+            .sort((a, b) => liveYes(b, live) - liveYes(a, live))
+            .slice(0, 4)
+            .map((m) => ({ key: m.id, label: m.groupItemTitle || m.question, market: m }))
+        : ev.markets.map((m) => ({ key: m.id, label: deadlineLabel(m.endDate), market: m }));
   return (
-    <div className="buckets">
-      {top.map((m) => {
-        const yes = liveYes(m, live);
-        return (
-          <div className="bucket-row" key={m.id}>
-            <span className="bucket-label">{m.groupItemTitle || m.question}</span>
-            <div className="bucket-bar-wrap">
-              <div className="bucket-bar" style={{ width: `${Math.max(1, yes)}%` }} />
-            </div>
-            <span className="bucket-val">{yes.toFixed(1)}%</span>
-          </div>
-        );
-      })}
-    </div>
+    <table className="ladder mini">
+      <thead>
+        <tr>
+          <th>{ev.type === "categorical" ? "Outcome" : "Deadline"}</th>
+          <th className="num">YES</th>
+          <th className="num">NO</th>
+          <th className="num">Volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ key, label, market }) => {
+          const yes = liveYes(market, live);
+          return (
+            <tr key={key}>
+              <td className="mini-label">{label}</td>
+              <td className="num">{yes.toFixed(1)}%</td>
+              <td className="num">{(100 - yes).toFixed(1)}%</td>
+              <td className="num">{fmtVolume(market.volume)}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
@@ -225,12 +240,13 @@ function CompareView({
 }
 
 function GroupCard({
-  group, live, news, watchlist, comparing, onToggleWatch, onToggleCompare,
+  group, live, news, watchlist, bets, comparing, onToggleWatch, onToggleCompare,
 }: {
   group: EventGroup;
   live: LivePriceMap;
   news: NewsData | null;
   watchlist: Set<string>;
+  bets?: Bet[];
   comparing: boolean;
   onToggleWatch: (id: string) => void;
   onToggleCompare: () => void;
@@ -303,12 +319,21 @@ function GroupCard({
       )}
 
       <MiniLadder ev={current} live={live} />
+
+      {bets?.map((b) => (
+        <BetStrip
+          key={b.id}
+          bet={b}
+          market={group.events.flatMap((e) => e.markets).find((m) => m.id === b.marketId)}
+          live={live}
+        />
+      ))}
     </div>
   );
 }
 
-export default function MarketsPage({ catalog, live, watchlist, news, onToggleWatch }: Props) {
-  const [showAll, setShowAll] = useState(false);
+export default function MarketsPage({ catalog, live, watchlist, bets, news, onToggleWatch }: Props) {
+  const [viewChoice, setViewChoice] = useState<MarketsView | null>(null);
   // compared group keys live in ?cmp= so comparisons are shareable links
   const [compare, setCompare] = useState<string[]>(() => {
     const p = new URLSearchParams(window.location.search).get("cmp");
@@ -333,7 +358,23 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
 
   const groups = useMemo(() => buildGroups(catalog.events), [catalog]);
   const tracked = groups.filter((g) => g.events.some((e) => watchlist.has(e.id)));
-  const shown = showAll || !tracked.length ? groups.slice(0, 30) : tracked;
+
+  /** group key → bets placed on any of the group's markets */
+  const groupBets = useMemo(() => {
+    const m = new Map<string, Bet[]>();
+    for (const g of groups) {
+      const marketIds = new Set(g.events.flatMap((e) => e.markets.map((mk) => mk.id)));
+      const bs = bets.filter((b) => marketIds.has(b.marketId));
+      if (bs.length) m.set(g.key, bs);
+    }
+    return m;
+  }, [groups, bets]);
+
+  const view: MarketsView = viewChoice ?? (tracked.length ? "watch" : "all");
+  const shown =
+    view === "watch" ? tracked
+    : view === "bets" ? groups.filter((g) => groupBets.has(g.key))
+    : groups.slice(0, 30);
 
   const compareGroups = compare
     .map((k) => groups.find((g) => g.key === k))
@@ -345,19 +386,26 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
         <div>
           <span className="panel-title">Market View</span>
           <span className="panel-sub" style={{ marginLeft: 10 }}>
-            {tracked.length
-              ? `${tracked.length} tracked group${tracked.length > 1 ? "s" : ""}`
-              : "no watchlist yet — showing top markets by volume"}
+            {view === "watch"
+              ? `${tracked.length} tracked group${tracked.length === 1 ? "" : "s"}`
+              : view === "bets"
+                ? `${shown.length} market group${shown.length === 1 ? "" : "s"} with open bets`
+                : "top markets by volume"}
           </span>
         </div>
         <div className="markets-tools">
           <AddToWatchlist groups={groups} watchlist={watchlist} onToggleWatch={onToggleWatch} />
-          {tracked.length > 0 && (
-            <label className="check">
-              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
-              show all markets
-            </label>
-          )}
+          <div className="toggle">
+            <button className={view === "watch" ? "on" : ""} onClick={() => setViewChoice("watch")}>
+              ★ watchlist
+            </button>
+            <button className={view === "bets" ? "on" : ""} onClick={() => setViewChoice("bets")}>
+              $ bets{groupBets.size ? ` (${groupBets.size})` : ""}
+            </button>
+            <button className={view === "all" ? "on" : ""} onClick={() => setViewChoice("all")}>
+              all markets
+            </button>
+          </div>
         </div>
       </div>
 
@@ -379,11 +427,19 @@ export default function MarketsPage({ catalog, live, watchlist, news, onToggleWa
             live={live}
             news={news}
             watchlist={watchlist}
+            bets={view === "bets" ? groupBets.get(g.key) : undefined}
             comparing={compare.includes(g.key)}
             onToggleWatch={onToggleWatch}
             onToggleCompare={() => toggleCompare(g.key)}
           />
         ))}
+        {!shown.length && (
+          <div className="empty">
+            {view === "bets"
+              ? "No open bets yet — log one from any market's $ button."
+              : "Nothing to show — star some markets or switch to all markets."}
+          </div>
+        )}
       </div>
     </div>
   );

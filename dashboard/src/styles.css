@@ -289,8 +289,8 @@ a:hover { text-decoration: underline; }
 .world-map { touch-action: none; cursor: grab; }
 .world-map:active { cursor: grabbing; }
 .map-disputed {
-  fill: none; stroke: var(--inv); stroke-dasharray: 4 3; opacity: 0.8;
-  shape-rendering: geometricPrecision; stroke-linecap: round;
+  fill: none; stroke: var(--inv); opacity: 0.85;
+  shape-rendering: geometricPrecision; /* dash pattern set inline per-feature */
 }
 .disputed-key { color: var(--inv); letter-spacing: -1px; }
 .focus-halo {
@@ -307,13 +307,14 @@ a:hover { text-decoration: underline; }
 
 /* personalized bet cards on the map */
 .bmc-rect {
-  fill: var(--head); stroke: #ffd54f88; stroke-width: 1; opacity: 0.95;
-  filter: drop-shadow(0 3px 6px #00000088);
+  fill: #0d0f18; stroke: #ffd54faa; stroke-width: 1; opacity: 0.98;
+  filter: drop-shadow(0 3px 6px #000000cc);
 }
-.bmc-title { fill: var(--text); font-size: 10px; font-weight: 700; }
-.bmc-line { fill: var(--muted); font-size: 9px; }
-.bmc-up { fill: var(--cheap); font-size: 10px; font-weight: 700; }
-.bmc-down { fill: var(--spike); font-size: 10px; font-weight: 700; }
+.bmc-title { fill: #ffffff; font-size: 10px; font-weight: 700; }
+.bmc-entry { fill: #9aa3b8; font-size: 9px; }
+.bmc-cur { fill: #ffffff; font-size: 9.5px; font-weight: 700; }
+.bmc-up { fill: var(--cheap); font-size: 10.5px; font-weight: 700; }
+.bmc-down { fill: var(--spike); font-size: 10.5px; font-weight: 700; }
 
 /* rail mini newsfeed */
 .rail-news {
@@ -342,6 +343,14 @@ a:hover { text-decoration: underline; }
 }
 .bet-btn:hover { background: #ffd54f; border-color: #ffd54f; color: var(--head); }
 .bet-cell { text-align: right; width: 1%; white-space: nowrap; }
+.pos-chip {
+  display: inline-block; font-size: 0.62rem; font-weight: 600;
+  padding: 1px 6px; margin-right: 5px; border-radius: 8px;
+  background: var(--head); border: 1px solid var(--grid);
+  font-variant-numeric: tabular-nums;
+}
+.pos-chip.up { border-color: #66bb6a88; }
+.pos-chip.down { border-color: #ff6b6b88; }
 .bet-form {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
   background: var(--head); border: 1px solid var(--grid); border-radius: 6px;
@@ -386,6 +395,16 @@ a:hover { text-decoration: underline; }
   font-variant-numeric: tabular-nums;
 }
 .bet-card-date { color: var(--muted); font-size: 0.62rem; margin-top: 4px; }
+.bet-cur { color: var(--accent); font-weight: 700; }
+
+/* compact bet strip on Market View group cards */
+.bet-strip {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--head); border: 1px solid #ffd54f44; border-radius: 6px;
+  padding: 5px 9px; margin-top: 6px; font-size: 0.72rem; cursor: default;
+  font-variant-numeric: tabular-nums;
+}
+.bet-strip .strip-cur { color: var(--accent); font-weight: 700; }
 
 .rail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .rail-tabs { align-self: stretch; }

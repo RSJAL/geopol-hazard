@@ -89,12 +89,12 @@ export default function BetsPanel({
                 <span className={`side-badge ${bet.side === "YES" ? "side-yes" : "side-no"}`}>
                   {bet.side}
                 </span>
-                <span>{bet.shares} @ {bet.entryPrice.toFixed(1)}¢</span>
+                <span className="muted">{bet.shares} @ {bet.entryPrice.toFixed(1)}¢ entry</span>
                 <span className="muted">cost ${pnl.cost.toFixed(2)}</span>
               </div>
               <div className="bet-card-row">
                 <span className="muted">Current</span>
-                <span>
+                <span className="bet-cur">
                   {hit ? `${pnl.currentPrice.toFixed(1)}¢ · $${pnl.value.toFixed(2)}` : "market closed?"}
                 </span>
               </div>

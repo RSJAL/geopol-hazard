@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
 import { buildLadder, fmtVolume, liveYes, deadlineLabel, type LadderRow } from "../lib/analytics";
-import { newBetId } from "../lib/bets";
+import { betPnl, newBetId } from "../lib/bets";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
 
@@ -11,6 +11,8 @@ interface Props {
   event: CatalogEvent;
   live: LivePriceMap;
   onAddBet: (bet: Bet) => void;
+  /** existing bets — markets you hold positions in show them inline */
+  bets?: Bet[];
   showFullViewLink?: boolean;
 }
 
@@ -153,7 +155,7 @@ function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
   );
 }
 
-export default function EventDetail({ event, live, onAddBet, showFullViewLink }: Props) {
+export default function EventDetail({ event, live, onAddBet, bets, showFullViewLink }: Props) {
   const [mode, setMode] = useState<RateMode>("total"); // total odds are the site default
   const [interval, setInterval_] = useState<HistoryInterval>("1m");
   const [series, setSeries] = useState<Series[] | null>(null);
@@ -201,6 +203,30 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
   const peakMarg = Math.max(...ladder.slice(1).map((r) => r.margDaily), 0);
   const maxImpl = Math.max(...ladder.map((r) => r.implDaily), 1e-9);
   const maxYes = Math.max(...ladder.map((r) => r.yes), 1e-9);
+
+  const positions = useMemo(() => {
+    const m = new Map<string, Bet[]>();
+    for (const b of bets ?? [])
+      (m.get(b.marketId) ?? m.set(b.marketId, []).get(b.marketId)!).push(b);
+    return m;
+  }, [bets]);
+
+  /** inline chips for positions already held on a market */
+  const posChips = (m: CatalogMarket) =>
+    positions.get(m.id)?.map((b) => {
+      const pnl = betPnl(b, m, live);
+      const up = pnl.pnl >= 0;
+      return (
+        <span
+          key={b.id}
+          className={`pos-chip ${up ? "up" : "down"}`}
+          title={`${b.side} ${b.shares} @ ${b.entryPrice.toFixed(1)}¢ → now ${pnl.currentPrice.toFixed(1)}¢`}
+        >
+          {b.side} {b.shares}@{b.entryPrice.toFixed(0)}¢ {up ? "+" : "−"}$
+          {Math.abs(pnl.pnl).toFixed(2)}
+        </span>
+      );
+    });
 
   const betBtn = (m: CatalogMarket) => (
     <button
@@ -293,7 +319,7 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
                     {r.isCheap && <span className="badge b-cheap">CHEAP</span>}
                     {r.isNegativeMarginal && <span className="badge b-neg" title="Longer deadline priced below shorter — inconsistent pricing">NEG</span>}
                   </td>
-                  <td className="bet-cell">{betBtn(r.market)}</td>
+                  <td className="bet-cell">{posChips(r.market)}{betBtn(r.market)}</td>
                 </tr>,
                 betMarketId === r.market.id && (
                   <tr key={`${r.endDate}-bet`} className="bet-row">
@@ -327,6 +353,7 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
                       <div className="bucket-bar" style={{ width: `${Math.max(1, yes)}%` }} />
                     </div>
                     <span className="bucket-val">{yes.toFixed(1)}%</span>
+                    {posChips(m)}
                     {betBtn(m)}
                   </div>
                   {betMarketId === m.id && (
@@ -358,6 +385,7 @@ export default function EventDetail({ event, live, onAddBet, showFullViewLink }:
                     </span>
                   )}
                   <span className="muted"> · spread {(m.spread ?? 0).toFixed(3)} · liq {fmtVolume(m.liquidity)}</span>
+                  {posChips(m)}
                   {betBtn(m)}
                 </div>
                 {betMarketId === m.id && (

@@ -270,6 +270,7 @@ export default function App() {
           catalog={catalog}
           live={live}
           watchlist={watchSet}
+          bets={bets}
           news={news}
           onToggleWatch={toggleWatch}
         />
@@ -281,6 +282,7 @@ export default function App() {
           catalog={catalog}
           live={live}
           news={news}
+          bets={bets}
           onAddBet={addBet}
         />
       )}
@@ -315,7 +317,7 @@ export default function App() {
               betEventIds={betEventIds}
             />
             {selected ? (
-              <EventDetail event={selected} live={live} onAddBet={addBet} showFullViewLink />
+              <EventDetail event={selected} live={live} onAddBet={addBet} bets={bets} showFullViewLink />
             ) : (
               <div className="detail-placeholder">
                 Select an event from the catalog to see its deadline ladder,

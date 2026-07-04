@@ -10,10 +10,11 @@ interface Props {
   catalog: Catalog;
   live: LivePriceMap;
   news: NewsData | null;
+  bets: Bet[];
   onAddBet: (bet: Bet) => void;
 }
 
-export default function EventPage({ id, catalog, live, news, onAddBet }: Props) {
+export default function EventPage({ id, catalog, live, news, bets, onAddBet }: Props) {
   const [newsDay, setNewsDay] = useState<string | null>(null);
   useEffect(() => setNewsDay(null), [id]);
   const { event, memberIds } = useMemo((): {
@@ -58,7 +59,7 @@ export default function EventPage({ id, catalog, live, news, onAddBet }: Props) 
       <a className="back-link" href="#/markets">← Markets</a>
       <div className="event-page-grid">
         <div className="event-page-main">
-          <EventDetail event={event} live={live} onAddBet={onAddBet} />
+          <EventDetail event={event} live={live} onAddBet={onAddBet} bets={bets} />
         </div>
         <div className="event-page-side">
           <div className="detail-panel">

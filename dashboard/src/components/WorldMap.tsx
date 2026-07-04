@@ -79,8 +79,11 @@ function BetCardG({ card, inv }: { card: BetMapCard; inv: number }) {
     <g className="map-bet-card" transform={`scale(${inv})`} pointerEvents="none">
       <rect x={10} y={-30} width={176} height={60} rx={7} className="bmc-rect" />
       <text x={19} y={-12} className="bmc-title">{card.title.slice(0, 27)}</text>
-      <text x={19} y={3} className="bmc-line">
-        {card.side} {card.shares} @ {card.entry.toFixed(1)}¢ → {card.current.toFixed(1)}¢
+      <text x={19} y={3}>
+        <tspan className="bmc-entry">
+          {card.side} {card.shares} @ {card.entry.toFixed(1)}¢
+        </tspan>
+        <tspan className="bmc-cur" dx="5">now {card.current.toFixed(1)}¢</tspan>
       </text>
       <text x={19} y={19} className={up ? "bmc-up" : "bmc-down"}>
         {up ? "+" : "−"}${Math.abs(card.pnl).toFixed(2)} ({card.pnlPct >= 0 ? "+" : ""}
@@ -349,10 +352,26 @@ export default function WorldMap({
             <path key={i} d={path(f) ?? ""} className="map-country"
                   style={{ strokeWidth: 0.5 * inv }} />
           ))}
-          {disputed?.features.map((f, i) => (
-            <path key={`d${i}`} d={path(f) ?? ""} className="map-disputed"
-                  style={{ strokeWidth: 1.1 * inv }} />
-          ))}
+          {disputed?.features.map((f, i) => {
+            // nine-dash line keeps bold dashes; land disputes get fine dots
+            const nine = String(
+              (f.properties as { featurecla?: string } | null)?.featurecla ?? "",
+            ).includes("nine-dash");
+            return (
+              <path
+                key={`d${i}`}
+                d={path(f) ?? ""}
+                className="map-disputed"
+                style={{
+                  strokeWidth: (nine ? 1.2 : 1.1) * inv,
+                  strokeDasharray: nine
+                    ? `${5 * inv} ${3.5 * inv}`
+                    : `${0.2 * inv} ${2.4 * inv}`,
+                  strokeLinecap: "round",
+                }}
+              />
+            );
+          })}
 
           {bubbles.map((b) => {
             // sub/country/remainder bubbles filter with a namespaced prefix
