@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
 import { buildLadder, fmtVolume, liveYes, deadlineLabel, type LadderRow } from "../lib/analytics";
-import { betPnl, newBetId } from "../lib/bets";
+import { betPnl, isOpen, newBetId } from "../lib/bets";
+import { DEFAULT_FEE_BPS, polymarketFee } from "../lib/fees";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
 
@@ -41,7 +42,8 @@ function BetForm({
 
   const nShares = parseFloat(shares) || 0;
   const nPrice = parseFloat(price) || 0;
-  const cost = (nShares * nPrice) / 100;
+  const fee = polymarketFee(nPrice, nShares);
+  const cost = (nShares * nPrice) / 100 + fee;
 
   return (
     <div className="bet-form" onClick={(e) => e.stopPropagation()}>
@@ -59,7 +61,9 @@ function BetForm({
         type="number" min="0.1" max="99.9" step="0.1" value={price}
         onChange={(e) => setPrice(e.target.value)} placeholder="entry ¢"
       />
-      <span className="muted">¢ = ${cost.toFixed(2)}</span>
+      <span className="muted">
+        ¢ = ${cost.toFixed(2)}{fee > 0 && ` (incl $${fee.toFixed(2)} fee)`}
+      </span>
       <span className="bet-form-spacer" />
       <button
         className="btn btn-primary"
@@ -74,6 +78,7 @@ function BetForm({
             shares: nShares,
             entryPrice: nPrice,
             openedAt: new Date().toISOString(),
+            ...(DEFAULT_FEE_BPS > 0 ? { feeBps: DEFAULT_FEE_BPS } : {}),
           });
           onClose();
         }}
@@ -207,7 +212,7 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
   const positions = useMemo(() => {
     const m = new Map<string, Bet[]>();
     for (const b of bets ?? [])
-      (m.get(b.marketId) ?? m.set(b.marketId, []).get(b.marketId)!).push(b);
+      if (isOpen(b)) (m.get(b.marketId) ?? m.set(b.marketId, []).get(b.marketId)!).push(b);
     return m;
   }, [bets]);
 

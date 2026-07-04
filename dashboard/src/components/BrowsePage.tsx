@@ -195,12 +195,12 @@ export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWat
 
   const groups = useMemo(() => buildGroups(catalog.events), [catalog]);
 
-  /** group key → bets placed on any of the group's markets */
+  /** group key → OPEN bets placed on any of the group's markets */
   const groupBets = useMemo(() => {
     const m = new Map<string, Bet[]>();
     for (const g of groups) {
       const marketIds = new Set(g.events.flatMap((e) => e.markets.map((mk) => mk.id)));
-      const bs = bets.filter((b) => marketIds.has(b.marketId));
+      const bs = bets.filter((b) => !b.closedAt && marketIds.has(b.marketId));
       if (bs.length) m.set(g.key, bs);
     }
     return m;

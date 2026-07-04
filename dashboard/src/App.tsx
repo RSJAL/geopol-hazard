@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Bet, Catalog, CatalogEvent, CatalogMarket, LivePriceMap, NewsData } from "./lib/types";
 import { fetchCatalog, fetchLivePrices, fetchNews } from "./lib/api";
 import { catalogStats, fmtVolume } from "./lib/analytics";
 import { loadWatchlist, persist } from "./lib/watchlist";
-import { betPnl, loadBets, persistBets } from "./lib/bets";
+import { betPnl, isOpen, loadBets, persistBets } from "./lib/bets";
 import WorldMap, { type BetMapCard, type MapFilter } from "./components/WorldMap";
 import NewsFeed from "./components/NewsFeed";
 import { relatedArticles } from "./lib/news";
@@ -13,14 +13,48 @@ import WatchlistPanel from "./components/WatchlistPanel";
 import BetsPanel from "./components/BetsPanel";
 import MarketsPage from "./components/MarketsPage";
 import BrowsePage from "./components/BrowsePage";
+import PortfolioPage from "./components/PortfolioPage";
 import EventPage from "./components/EventPage";
 
 const LIVE_REFRESH_MS = 60_000;
+
+/** ?demo=1 seeds sample in-memory bets (never persisted) so the bets and
+ *  portfolio UI can be verified in a fresh/headless browser profile. */
+const DEMO = new URLSearchParams(window.location.search).has("demo");
+
+function demoBets(catalog: Catalog): Bet[] {
+  const evs = catalog.events
+    .filter((e) => e.markets.some((m) => m.yesTokenId))
+    .slice(0, 4);
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+  const out: Bet[] = [];
+  evs.forEach((ev, i) => {
+    const m = ev.markets.find((mk) => mk.yesTokenId)!;
+    const side = i % 2 ? "NO" : "YES";
+    const entry = side === "YES" ? Math.max(1, m.yes - 4) : Math.max(1, 100 - m.yes - 4);
+    out.push({
+      id: `demo${i}`,
+      eventId: ev.id,
+      marketId: m.id,
+      label: `${ev.title.slice(0, 40)} — demo`,
+      side,
+      shares: 50 + i * 25,
+      entryPrice: Math.min(95, entry),
+      openedAt: daysAgo(21 - i * 5),
+      // last one arrives closed so the history table and realized P&L render
+      ...(i === 3
+        ? { closedAt: daysAgo(2), exitPrice: Math.min(99, entry + 11), settled: false }
+        : {}),
+    });
+  });
+  return out;
+}
 
 type Route =
   | { page: "map" }
   | { page: "markets" }
   | { page: "browse" }
+  | { page: "portfolio" }
   | { page: "event"; id: string };
 
 function parseRoute(): Route {
@@ -28,6 +62,7 @@ function parseRoute(): Route {
   if (h.startsWith("#/event/")) return { page: "event", id: decodeURIComponent(h.slice(8)) };
   if (h.startsWith("#/markets")) return { page: "markets" };
   if (h.startsWith("#/browse")) return { page: "browse" };
+  if (h.startsWith("#/portfolio")) return { page: "portfolio" };
   return { page: "map" };
 }
 
@@ -52,6 +87,11 @@ export default function App() {
     fetchCatalog().then(setCatalog).catch((e) => setError(String(e)));
     fetchNews().then(setNews);
   }, []);
+
+  // demo bets need real catalog market ids, so seed after the catalog loads
+  useEffect(() => {
+    if (DEMO && catalog) setBets((prev) => (prev.length ? prev : demoBets(catalog)));
+  }, [catalog]);
 
   useEffect(() => {
     const onHash = () => setRoute(parseRoute());
@@ -80,7 +120,7 @@ export default function App() {
   const addBet = useCallback((bet: Bet) => {
     setBets((prev) => {
       const next = [...prev, bet];
-      persistBets(next);
+      if (!DEMO) persistBets(next);
       return next;
     });
     setRailTab("bets");
@@ -89,7 +129,16 @@ export default function App() {
   const removeBet = useCallback((id: string) => {
     setBets((prev) => {
       const next = prev.filter((b) => b.id !== id);
-      persistBets(next);
+      if (!DEMO) persistBets(next);
+      return next;
+    });
+  }, []);
+
+  /** replace a bet record in place (close/settle from the portfolio page) */
+  const updateBet = useCallback((bet: Bet) => {
+    setBets((prev) => {
+      const next = prev.map((b) => (b.id === bet.id ? bet : b));
+      if (!DEMO) persistBets(next);
       return next;
     });
   }, []);
@@ -98,14 +147,17 @@ export default function App() {
     setBets((prev) => {
       const have = new Set(prev.map((b) => b.id));
       const next = [...prev, ...incoming.filter((b) => !have.has(b.id))];
-      persistBets(next);
+      if (!DEMO) persistBets(next);
       return next;
     });
   }, []);
 
+  /** open positions drive the map scope, live refresh, and bet cards */
+  const openBets = useMemo(() => bets.filter(isOpen), [bets]);
+
   const betEventIds = useMemo(
-    () => new Set(bets.map((b) => b.eventId).filter(Boolean)),
-    [bets],
+    () => new Set(openBets.map((b) => b.eventId).filter(Boolean)),
+    [openBets],
   );
 
   /** market id → market + owning event, for bet P&L lookups */
@@ -182,7 +234,7 @@ export default function App() {
   /** eventId → bet summary for the personalized map cards (first bet wins) */
   const betCards = useMemo(() => {
     const m = new Map<string, BetMapCard>();
-    for (const b of bets) {
+    for (const b of openBets) {
       if (!b.eventId || m.has(b.eventId)) continue;
       const hit = marketIndex.get(b.marketId);
       const pnl = betPnl(b, hit?.market, live);
@@ -197,7 +249,7 @@ export default function App() {
       });
     }
     return m;
-  }, [bets, marketIndex, live]);
+  }, [openBets, marketIndex, live]);
 
   /** 3 most relevant articles for the selected event (rail mini newsfeed) */
   const railNews = useMemo(
@@ -242,6 +294,7 @@ export default function App() {
             <a href="#/" className={route.page === "map" ? "on" : ""}>Dashboard</a>
             <a href="#/markets" className={route.page === "markets" || route.page === "event" ? "on" : ""}>Markets</a>
             <a href="#/browse" className={route.page === "browse" ? "on" : ""}>Browse</a>
+            <a href="#/portfolio" className={route.page === "portfolio" ? "on" : ""}>Portfolio</a>
           </nav>
         </div>
         <div className="tiles">
@@ -290,6 +343,17 @@ export default function App() {
           watchlist={watchSet}
           bets={bets}
           onToggleWatch={toggleWatch}
+        />
+      )}
+
+      {route.page === "portfolio" && (
+        <PortfolioPage
+          bets={bets}
+          marketIndex={marketIndex}
+          live={live}
+          onUpdateBet={updateBet}
+          onRemoveBet={removeBet}
+          onImport={importBetList}
         />
       )}
 
@@ -349,7 +413,7 @@ export default function App() {
                 ★ Watchlist
               </button>
               <button className={railTab === "bets" ? "on" : ""} onClick={() => setRailTab("bets")}>
-                $ Bets{bets.length ? ` (${bets.length})` : ""}
+                $ Bets{openBets.length ? ` (${openBets.length})` : ""}
               </button>
             </div>
             {railTab === "watch" ? (

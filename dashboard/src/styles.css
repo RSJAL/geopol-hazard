@@ -681,6 +681,44 @@ a:hover { text-decoration: underline; }
 }
 .bw-foot-right { display: flex; align-items: center; gap: 2px; }
 
+/* ── Portfolio page ──────────────────────────────────────────────────────── */
+.portfolio-page { min-height: 60vh; display: flex; flex-direction: column; gap: 12px; }
+.pf-head { display: flex; justify-content: space-between; align-items: center; padding: 0 2px; }
+.pf-head .panel-title { font-size: 1.05rem; }
+.pf-io { margin-bottom: 0; }
+.pf-io .btn { flex: initial; }
+.pf-tiles { justify-content: flex-start; }
+.pf-tiles .tile { min-width: 110px; }
+.pf-pct { font-size: 0.72rem; font-weight: 400; }
+.pf-panel { padding: 14px; }
+.pf-chart { position: relative; }
+.pf-chart svg { width: 100%; height: auto; display: block; }
+.pf-line-value { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.pf-line-invested {
+  fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4;
+}
+.pf-dot-value { fill: var(--accent); stroke: #0f1117; stroke-width: 1; }
+.pf-dot-invested { fill: var(--muted); stroke: #0f1117; stroke-width: 1; }
+.pf-key-value { color: var(--accent); }
+.pf-key-invested { color: var(--muted); }
+.pf-note { font-size: 0.66rem; color: var(--muted); margin-top: 6px; }
+.pf-table .pf-label {
+  max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pf-row { cursor: pointer; }
+.pf-row:hover td { background: var(--panel-2); }
+.pf-actions { text-align: right; white-space: nowrap; width: 1%; }
+.pf-close-btn { flex: initial; padding: 2px 10px; font-size: 0.68rem; }
+.pf-close-btn:hover { border-color: var(--inv); color: var(--inv); }
+.pf-won { flex: initial; color: var(--cheap); border-color: #66bb6a66; }
+.pf-lost { flex: initial; color: var(--spike); border-color: #ff6b6b66; }
+.pf-link {
+  display: block; font-size: 0.7rem; color: var(--muted);
+  background: var(--head); border: 1px solid var(--grid); border-radius: 6px;
+  padding: 6px 9px; margin-bottom: 8px;
+}
+.pf-link:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--head); }

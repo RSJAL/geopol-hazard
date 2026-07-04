@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap } from "../lib/types";
-import { betPnl, exportBets, importBets } from "../lib/bets";
+import { betPnl, exportBets, importBets, isOpen } from "../lib/bets";
 
 interface Props {
   bets: Bet[];
@@ -16,9 +16,11 @@ export default function BetsPanel({
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // the rail tracks OPEN positions; closed history lives on the portfolio page
+  const openBets = bets.filter(isOpen);
   let totCost = 0;
   let totValue = 0;
-  const rows = bets.map((b) => {
+  const rows = openBets.map((b) => {
     const hit = marketIndex.get(b.marketId);
     const pnl = betPnl(b, hit?.market, live);
     totCost += pnl.cost;
@@ -26,10 +28,14 @@ export default function BetsPanel({
     return { bet: b, hit, pnl };
   });
   const totPnl = totValue - totCost;
+  const realized = bets
+    .filter((b) => !isOpen(b))
+    .reduce((s, b) => s + betPnl(b, marketIndex.get(b.marketId)?.market, live).pnl, 0);
+  const nClosed = bets.length - openBets.length;
 
   return (
     <div className="bets-panel">
-      {bets.length > 0 && (
+      {openBets.length > 0 && (
         <div className="pnl-summary">
           <div>
             <div className="tile-label">Cost</div>
@@ -47,6 +53,16 @@ export default function BetsPanel({
           </div>
         </div>
       )}
+
+      <a className="pf-link" href="#/portfolio">
+        💼 portfolio: value graph, close positions, history
+        {nClosed > 0 && (
+          <> · realized <b className={realized >= 0 ? "up" : "down"}>
+            {realized >= 0 ? "+" : "−"}${Math.abs(realized).toFixed(2)}
+          </b></>
+        )}
+        {" →"}
+      </a>
 
       <div className="watch-actions">
         <button className="btn" onClick={() => exportBets(bets)} disabled={!bets.length}>
@@ -111,10 +127,12 @@ export default function BetsPanel({
             </div>
           );
         })}
-        {!bets.length && (
+        {!openBets.length && (
           <div className="empty">
-            Log bets from any market's <b>$</b> button. Records stay in this
-            browser only — use export for backup.
+            {nClosed
+              ? "No open positions — closed bets are on the portfolio page."
+              : <>Log bets from any market's <b>$</b> button. Records stay in
+                this browser only — use export for backup.</>}
           </div>
         )}
       </div>

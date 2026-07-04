@@ -100,6 +100,14 @@ export interface Bet {
   shares: number;
   entryPrice: number; // percent 0-100 paid per share (x100 = cents)
   openedAt: string; // ISO date
+  /** present ⇒ position is closed (absent on legacy records = open) */
+  closedAt?: string;
+  /** price received per share at close, percent, for the taken side */
+  exitPrice?: number;
+  /** closed by market resolution (fee-free) rather than sold on the book */
+  settled?: boolean;
+  /** Polymarket taker fee rate in bps captured at open (0 = fee-free) */
+  feeBps?: number;
 }
 
 /** Live price overlay fetched client-side, keyed by market id. */
