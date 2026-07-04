@@ -20,8 +20,8 @@ interface Props {
   onToggleWatch: (id: string) => void;
 }
 
-/** Compact strip showing a logged bet on a group card. */
-function BetStrip({ bet, market, live }: { bet: Bet; market: CatalogMarket | undefined; live: LivePriceMap }) {
+/** Compact strip showing a logged bet on a group card (also used by BrowsePage). */
+export function BetStrip({ bet, market, live }: { bet: Bet; market: CatalogMarket | undefined; live: LivePriceMap }) {
   const pnl = betPnl(bet, market, live);
   const up = pnl.pnl >= 0;
   return (

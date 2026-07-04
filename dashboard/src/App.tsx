@@ -288,6 +288,7 @@ export default function App() {
           catalog={catalog}
           live={live}
           watchlist={watchSet}
+          bets={bets}
           onToggleWatch={toggleWatch}
         />
       )}

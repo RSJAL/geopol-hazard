@@ -1,16 +1,19 @@
 import { useMemo, useState } from "react";
-import type { Catalog, CatalogEvent, LivePriceMap } from "../lib/types";
+import type { Bet, Catalog, CatalogEvent, LivePriceMap } from "../lib/types";
 import { anchorCountry, buildLadder, deadlineLabel, fmtVolume, liveYes } from "../lib/analytics";
 import { buildGroups, type EventGroup } from "../lib/grouping";
+import { BetStrip } from "./MarketsPage";
 
 interface Props {
   catalog: Catalog;
   live: LivePriceMap;
   watchlist: Set<string>;
+  bets: Bet[];
   onToggleWatch: (id: string) => void;
 }
 
 type SortKey = "volume" | "volume24h" | "move" | "endDate";
+type Scope = "all" | "watch" | "bets";
 
 const MAX_ROWS = 3;
 
@@ -64,11 +67,13 @@ interface CardRow {
 }
 
 function BrowseCard({
-  group, live, watchlist, onToggleWatch, regionName, regionOfCountry,
+  group, live, watchlist, bets, onToggleWatch, regionName, regionOfCountry,
 }: {
   group: EventGroup;
   live: LivePriceMap;
   watchlist: Set<string>;
+  /** bets on this group's markets — set in bets scope to show position strips */
+  bets?: Bet[];
   onToggleWatch: (id: string) => void;
   regionName: Map<string, string>;
   regionOfCountry: Map<string, string | undefined>;
@@ -139,6 +144,15 @@ function BrowseCard({
         </div>
       )}
 
+      {bets?.map((b) => (
+        <BetStrip
+          key={b.id}
+          bet={b}
+          market={group.events.flatMap((e) => e.markets).find((m) => m.id === b.marketId)}
+          live={live}
+        />
+      ))}
+
       <div className="bw-foot">
         <span>{fmtVolume(totalVol)} Vol.</span>
         <span className="bw-foot-right">
@@ -160,10 +174,11 @@ function BrowseCard({
   );
 }
 
-export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: Props) {
+export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWatch }: Props) {
   const [geo, setGeo] = useState<string | null>(null); // region id | "country:XXX" | "__global__"
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("volume");
+  const [scope, setScope] = useState<Scope>("all");
 
   const regionOfCountry = useMemo(
     () => new Map(catalog.countries.map((c) => [c.id, c.region])),
@@ -180,6 +195,26 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
 
   const groups = useMemo(() => buildGroups(catalog.events), [catalog]);
 
+  /** group key → bets placed on any of the group's markets */
+  const groupBets = useMemo(() => {
+    const m = new Map<string, Bet[]>();
+    for (const g of groups) {
+      const marketIds = new Set(g.events.flatMap((e) => e.markets.map((mk) => mk.id)));
+      const bs = bets.filter((b) => marketIds.has(b.marketId));
+      if (bs.length) m.set(g.key, bs);
+    }
+    return m;
+  }, [groups, bets]);
+
+  /** watchlist/bets scope narrows everything: cards, sidebar counts, title */
+  const scopedGroups = useMemo(() => {
+    switch (scope) {
+      case "watch": return groups.filter((g) => g.events.some((e) => watchlist.has(e.id)));
+      case "bets":  return groups.filter((g) => groupBets.has(g.key));
+      default:      return groups;
+    }
+  }, [groups, scope, watchlist, groupBets]);
+
   /** each card's geography comes from its busiest member, like the map anchors */
   const geoOf = useMemo(() => {
     const m = new Map<string, { region: string | null; country: string | null }>();
@@ -194,14 +229,14 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
     const regionCounts = new Map<string, number>();
     const countryCounts = new Map<string, number>();
     let globalCount = 0;
-    for (const g of groups) {
+    for (const g of scopedGroups) {
       const { region, country } = geoOf.get(g.key)!;
       if (!region) { globalCount++; continue; }
       regionCounts.set(region, (regionCounts.get(region) ?? 0) + 1);
       if (country) countryCounts.set(country, (countryCounts.get(country) ?? 0) + 1);
     }
     return { regionCounts, countryCounts, globalCount };
-  }, [groups, geoOf]);
+  }, [scopedGroups, geoOf]);
 
   const topCountries = useMemo(
     () =>
@@ -213,7 +248,7 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let out = groups.filter((g) => {
+    let out = scopedGroups.filter((g) => {
       const { region, country } = geoOf.get(g.key)!;
       if (geo === "__global__" && region) return false;
       if (geo?.startsWith("country:") && country !== geo.slice(8)) return false;
@@ -234,7 +269,7 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
       case "endDate":   out = out.sort((a, b) => nearest(a).localeCompare(nearest(b))); break;
     }
     return out;
-  }, [groups, geoOf, geo, query, sort]);
+  }, [scopedGroups, geoOf, geo, query, sort]);
 
   const sideItem = (id: string | null, label: string, count: number) => (
     <button
@@ -250,7 +285,7 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
   return (
     <div className="browse-page">
       <aside className="bw-side">
-        {sideItem(null, "All markets", groups.length)}
+        {sideItem(null, "All markets", scopedGroups.length)}
         <div className="bw-side-sect">Regions</div>
         {catalog.regions
           .filter((r) => (regionCounts.get(r.id) ?? 0) > 0)
@@ -275,6 +310,17 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
             <span className="bw-page-count"> · {shown.length}</span>
           </span>
           <div className="bw-tools">
+            <div className="toggle">
+              <button className={scope === "watch" ? "on" : ""} onClick={() => setScope("watch")}>
+                ★ watchlist
+              </button>
+              <button className={scope === "bets" ? "on" : ""} onClick={() => setScope("bets")}>
+                $ bets{groupBets.size ? ` (${groupBets.size})` : ""}
+              </button>
+              <button className={scope === "all" ? "on" : ""} onClick={() => setScope("all")}>
+                all
+              </button>
+            </div>
             <input
               className="search bw-search"
               placeholder="Search markets…"
@@ -297,12 +343,21 @@ export default function BrowsePage({ catalog, live, watchlist, onToggleWatch }: 
               group={g}
               live={live}
               watchlist={watchlist}
+              bets={scope === "bets" ? groupBets.get(g.key) : undefined}
               onToggleWatch={onToggleWatch}
               regionName={regionName}
               regionOfCountry={regionOfCountry}
             />
           ))}
-          {!shown.length && <div className="empty">No markets match.</div>}
+          {!shown.length && (
+            <div className="empty">
+              {scope === "watch"
+                ? "No watchlisted markets here — star some cards first."
+                : scope === "bets"
+                  ? "No open bets here — log one from any event's $ button."
+                  : "No markets match."}
+            </div>
+          )}
         </div>
       </div>
     </div>
