@@ -118,6 +118,9 @@ SUBREGIONS = [
 # (id, name, lat, lon, home_region, subregion_or_None, keyword regex).
 # home_region/subregion tie each country into the hierarchy so bubble counts
 # split parent totals exactly at every zoom level.
+# ORDER IS LOAD-BEARING: infer_geo takes the FIRST title match in table order
+# to pick the event's region, so conflict-zone countries (Taiwan, Ukraine,
+# Iran, …) must stay above broad-match entries like USA. Don't alphabetize.
 COUNTRIES = [
     ("TWN", "Taiwan",        23.7,  121.0, "e_asia",   None,        r"\btaiwan|taipei\b"),
     ("UKR", "Ukraine",       49.0,   32.0, "europe",   None,        r"\bukrain|kyiv|zelensk|donbas|donetsk|crimea|kostyantynivka|kupiansk|lyman|kharkiv|sumy|zaporizh"),

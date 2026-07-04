@@ -558,6 +558,129 @@ a:hover { text-decoration: underline; }
 }
 .event-page-side .news-list { max-height: 60vh; overflow-y: auto; }
 
+/* ── Browse view (Polymarket structure × Kalshi skin) ────────────────────── */
+.browse-page {
+  --bw-card: #151a24;
+  --bw-border: #252c3c;
+  --bw-green: #00c896;
+  --bw-green-dim: #0d2f26;
+  --bw-red: #ff5c6c;
+  --bw-red-dim: #34161d;
+  display: grid; grid-template-columns: 200px minmax(0, 1fr);
+  gap: 18px; align-items: start; min-height: 60vh;
+}
+@media (max-width: 900px) {
+  .browse-page { grid-template-columns: 1fr; }
+  .bw-side { flex-direction: row; flex-wrap: wrap; }
+}
+
+/* left rail of geography filters, Polymarket-style */
+.bw-side { display: flex; flex-direction: column; gap: 1px; padding-top: 4px; }
+.bw-side-sect {
+  font-size: 0.62rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.08em; margin: 12px 0 4px; padding-left: 10px;
+}
+.bw-side-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  background: none; border: none; border-radius: 8px; cursor: pointer;
+  padding: 6px 10px; font-size: 0.78rem; color: var(--text); text-align: left;
+}
+.bw-side-item:hover { background: var(--bw-card); }
+.bw-side-item.on { color: var(--bw-green); background: var(--bw-card); font-weight: 600; }
+.bw-side-count { color: var(--muted); font-size: 0.68rem; }
+
+/* toolbar */
+.bw-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.bw-page-title { font-size: 1.15rem; font-weight: 700; }
+.bw-page-count { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+.bw-tools { display: flex; gap: 8px; align-items: center; }
+.bw-search { width: 220px; margin-bottom: 0 !important; border-radius: 16px; }
+.bw-sort {
+  background: var(--head); color: var(--text); border: 1px solid var(--grid);
+  border-radius: 16px; padding: 7px 10px; font-size: 0.74rem; outline: none;
+}
+
+/* card grid */
+.bw-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.bw-card {
+  display: flex; flex-direction: column;
+  background: var(--bw-card); border: 1px solid var(--bw-border);
+  border-radius: 14px; padding: 16px 16px 12px; cursor: pointer;
+  transition: border-color 0.12s, transform 0.12s;
+}
+.bw-card:hover { border-color: #3a4560; transform: translateY(-1px); }
+
+.bw-head { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+.bw-flag {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 9px;
+  background: var(--head); border: 1px solid var(--bw-border);
+  display: grid; place-items: center; font-size: 1.15rem;
+}
+.bw-head-main { flex: 1; min-width: 0; }
+.bw-eyebrow {
+  font-size: 0.6rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 3px;
+}
+.bw-eyebrow-region { font-weight: 400; }
+.bw-title {
+  font-size: 0.92rem; font-weight: 700; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Kalshi-style outcome rows: label + underline bar, multiplier, percent pill */
+.bw-rows { display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.bw-row { display: flex; align-items: center; gap: 10px; }
+.bw-row-label { flex: 1; min-width: 0; }
+.bw-row-name {
+  display: block; font-size: 0.8rem; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bw-underline { height: 3px; border-radius: 2px; }
+.bw-underline.u0 { background: var(--bw-green); }
+.bw-underline.u1 { background: var(--accent); }
+.bw-underline.u2 { background: #4a5170; }
+.bw-mult {
+  font-size: 0.68rem; color: var(--muted); font-weight: 600;
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+.bw-pill {
+  border: 1px solid var(--bw-green); border-radius: 15px;
+  min-width: 52px; text-align: center; padding: 4px 10px;
+  font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.bw-more { font-size: 0.68rem; color: var(--muted); padding-left: 2px; }
+
+/* Polymarket-style binary card: chance gauge + big Yes/No */
+.chance-gauge { width: 60px; flex-shrink: 0; }
+.gauge-track { fill: none; stroke: var(--grid); stroke-width: 5; stroke-linecap: round; }
+.gauge-arc { fill: none; stroke-width: 5; stroke-linecap: round; }
+.gauge-pct { fill: var(--text); font-size: 12px; font-weight: 700; text-anchor: middle; }
+.gauge-sub { fill: var(--muted); font-size: 7px; text-anchor: middle; }
+.bw-yn { display: flex; gap: 8px; flex: 1; align-items: flex-end; }
+.bw-yes, .bw-no {
+  flex: 1; text-align: center; border-radius: 8px; padding: 8px 0;
+  font-size: 0.8rem; font-weight: 700;
+}
+.bw-yes { background: var(--bw-green-dim); color: var(--bw-green); }
+.bw-no { background: var(--bw-red-dim); color: var(--bw-red); }
+.bw-card:hover .bw-yes { background: #114234; }
+.bw-card:hover .bw-no { background: #43202a; }
+
+.bw-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--bw-border);
+  font-size: 0.68rem; color: var(--muted);
+}
+.bw-foot-right { display: flex; align-items: center; gap: 2px; }
+
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--head); }

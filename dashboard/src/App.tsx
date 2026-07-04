@@ -12,16 +12,22 @@ import EventDetail from "./components/EventDetail";
 import WatchlistPanel from "./components/WatchlistPanel";
 import BetsPanel from "./components/BetsPanel";
 import MarketsPage from "./components/MarketsPage";
+import BrowsePage from "./components/BrowsePage";
 import EventPage from "./components/EventPage";
 
 const LIVE_REFRESH_MS = 60_000;
 
-type Route = { page: "map" } | { page: "markets" } | { page: "event"; id: string };
+type Route =
+  | { page: "map" }
+  | { page: "markets" }
+  | { page: "browse" }
+  | { page: "event"; id: string };
 
 function parseRoute(): Route {
   const h = window.location.hash;
   if (h.startsWith("#/event/")) return { page: "event", id: decodeURIComponent(h.slice(8)) };
   if (h.startsWith("#/markets")) return { page: "markets" };
+  if (h.startsWith("#/browse")) return { page: "browse" };
   return { page: "map" };
 }
 
@@ -234,7 +240,8 @@ export default function App() {
           </p>
           <nav className="nav">
             <a href="#/" className={route.page === "map" ? "on" : ""}>Dashboard</a>
-            <a href="#/markets" className={route.page !== "map" ? "on" : ""}>Markets</a>
+            <a href="#/markets" className={route.page === "markets" || route.page === "event" ? "on" : ""}>Markets</a>
+            <a href="#/browse" className={route.page === "browse" ? "on" : ""}>Browse</a>
           </nav>
         </div>
         <div className="tiles">
@@ -272,6 +279,15 @@ export default function App() {
           watchlist={watchSet}
           bets={bets}
           news={news}
+          onToggleWatch={toggleWatch}
+        />
+      )}
+
+      {route.page === "browse" && (
+        <BrowsePage
+          catalog={catalog}
+          live={live}
+          watchlist={watchSet}
           onToggleWatch={toggleWatch}
         />
       )}
