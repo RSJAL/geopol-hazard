@@ -322,7 +322,27 @@ def normalize_market(m: dict, today: date) -> Optional[dict]:
         "volume1wk":     round(float(m.get("volume1wk") or 0)),
         "liquidity":     round(float(m.get("liquidity") or 0)) if m.get("liquidity") else 0,
         "yesTokenId":    tokens[0] if tokens else None,
+        "feeBps":        market_fee_bps(m),
     }
+
+
+# Polymarket taker fee rates by market category (docs.polymarket.com, Jul 2026):
+# fee = shares × rate × p × (1−p); makers pay nothing; geopolitics/world-events
+# markets are fee-free. Gamma flags fee-enabled markets with feesEnabled +
+# feeType — an unrecognized feeType gets the 4% politics rate as a safe guess.
+FEE_TYPE_BPS = {
+    "crypto": 700,
+    "sports": 300,
+    "finance": 400, "politics": 400, "tech": 400, "mentions": 400,
+    "economics": 500, "culture": 500, "weather": 500, "other": 500,
+}
+
+
+def market_fee_bps(m: dict) -> int:
+    if not m.get("feesEnabled"):
+        return 0
+    ftype = str(m.get("feeType") or "").lower()
+    return FEE_TYPE_BPS.get(ftype, 400)
 
 
 def classify(markets: list[dict]) -> str:

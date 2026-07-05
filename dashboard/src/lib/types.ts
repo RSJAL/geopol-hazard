@@ -13,6 +13,8 @@ export interface CatalogMarket {
   volume1wk: number;
   liquidity: number;
   yesTokenId: string | null;
+  /** Polymarket taker fee rate in bps (0 = fee-free; absent on old catalogs) */
+  feeBps?: number;
 }
 
 export type EventType = "horizon" | "categorical" | "binary";
@@ -72,11 +74,15 @@ export interface Catalog {
 }
 
 // ── News ─────────────────────────────────────────────────────────────────────
+export type NewsSourceType = "press" | "osint" | "breaking";
+
 export interface NewsArticle {
   id: string;
   title: string;
   url: string;
   source: string;
+  /** press (RSS whitelist) | osint / breaking (X accounts); absent = press */
+  sourceType?: NewsSourceType;
   publishedAt: string | null;
   regions: string[];
   eventIds: string[];

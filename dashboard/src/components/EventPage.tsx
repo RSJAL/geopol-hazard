@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Bet, Catalog, CatalogEvent, LivePriceMap, NewsData } from "../lib/types";
+import type { Bet, Catalog, CatalogEvent, LivePriceMap, NewsData, NewsSourceType } from "../lib/types";
 import { buildGroups } from "../lib/grouping";
 import { relatedArticles } from "../lib/news";
 import EventDetail from "./EventDetail";
@@ -14,9 +14,14 @@ interface Props {
   onAddBet: (bet: Bet) => void;
 }
 
+const TYPE_LABEL: Record<NewsSourceType, string> = {
+  press: "Press", osint: "OSINT", breaking: "Breaking",
+};
+
 export default function EventPage({ id, catalog, live, news, bets, onAddBet }: Props) {
   const [newsDay, setNewsDay] = useState<string | null>(null);
-  useEffect(() => setNewsDay(null), [id]);
+  const [newsType, setNewsType] = useState<NewsSourceType | null>(null); // null = all
+  useEffect(() => { setNewsDay(null); setNewsType(null); }, [id]);
   const { event, memberIds } = useMemo((): {
     event: CatalogEvent | null;
     memberIds: Set<string>;
@@ -32,9 +37,23 @@ export default function EventPage({ id, catalog, live, news, bets, onAddBet }: P
     return { event: ev, memberIds: new Set(ev ? [ev.id] : []) };
   }, [id, catalog]);
 
-  const articles = useMemo(
+  const allArticles = useMemo(
     () => (event ? relatedArticles(news, memberIds, event.region, 5) : []),
     [news, event, memberIds],
+  );
+
+  /** source types present — the filter row only renders when there's a mix */
+  const typesPresent = useMemo(
+    () => new Set(allArticles.map((a) => a.sourceType ?? "press")),
+    [allArticles],
+  );
+
+  const articles = useMemo(
+    () =>
+      newsType
+        ? allArticles.filter((a) => (a.sourceType ?? "press") === newsType)
+        : allArticles,
+    [allArticles, newsType],
   );
 
   const dayArticles = useMemo(
@@ -78,6 +97,27 @@ export default function EventPage({ id, catalog, live, news, bets, onAddBet }: P
                 )}
               </span>
             </div>
+            {typesPresent.size > 1 && (
+              <div className="news-type-row">
+                <button
+                  className={`chip${newsType === null ? " chip-active" : ""}`}
+                  onClick={() => setNewsType(null)}
+                >
+                  All
+                </button>
+                {(["press", "osint", "breaking"] as NewsSourceType[])
+                  .filter((t) => typesPresent.has(t))
+                  .map((t) => (
+                    <button
+                      key={t}
+                      className={`chip${newsType === t ? " chip-active" : ""}`}
+                      onClick={() => setNewsType(newsType === t ? null : t)}
+                    >
+                      {TYPE_LABEL[t]}
+                    </button>
+                  ))}
+              </div>
+            )}
             <SentimentChart articles={articles} selectedDay={newsDay} onSelectDay={setNewsDay} />
             <NewsFeed articles={dayArticles} limit={newsDay ? 100 : 25} />
           </div>

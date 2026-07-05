@@ -57,6 +57,14 @@ export default function CatalogPanel({
     [catalog],
   );
 
+  /** 24h-volume threshold for the top 10% of events — the "Active" tag */
+  const activeCut = useMemo(() => {
+    const vols = catalog.events.map((e) => e.volume24h).sort((a, b) => b - a);
+    if (!vols.length) return Infinity;
+    const cut = vols[Math.max(0, Math.ceil(vols.length * 0.1) - 1)];
+    return cut > 0 ? cut : Infinity; // all-zero snapshot: tag nothing
+  }, [catalog]);
+
   /** events surviving the map's all/watch/bets scope — counts match bubbles */
   const base = useMemo(
     () =>
@@ -255,7 +263,17 @@ export default function CatalogPanel({
                 {watched ? "★" : "☆"}
               </button>
               <div className="row-main">
-                <div className="row-title">{ev.title}</div>
+                <div className="row-title">
+                  {ev.volume24h >= activeCut && (
+                    <span
+                      className="badge b-active"
+                      title={`Top 10% of events by 24h volume (${fmtVolume(ev.volume24h)} traded today)`}
+                    >
+                      ⚡ ACTIVE
+                    </span>
+                  )}
+                  {ev.title}
+                </div>
                 <div className="row-meta">
                   {ev.category}
                   {TYPE_LABEL[ev.type] && ` · ${TYPE_LABEL[ev.type]}`}

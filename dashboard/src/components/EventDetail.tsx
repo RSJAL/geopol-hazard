@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
 import { buildLadder, fmtVolume, liveYes, deadlineLabel } from "../lib/analytics";
 import { betPnl, isOpen, newBetId } from "../lib/bets";
-import { DEFAULT_FEE_BPS, polymarketFee } from "../lib/fees";
+import { DEFAULT_FEE_BPS, feeRateLabel, polymarketFee } from "../lib/fees";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
 
-// lead series takes the default green (V0.152); the rest stay distinguishable
-const LINE_COLORS = ["#00c896", "#ffa726", "#4fc3f7", "#ef5350", "#ab47bc", "#26c6da"];
+// blue-led (V0.153: green everywhere was overwhelming — charts stay blue)
+const LINE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a", "#ef5350", "#ab47bc", "#26c6da"];
 
 const INTERVAL_LABEL: Record<HistoryInterval, string> = {
   "1d": "1D", "1w": "1W", "1m": "1M", max: "Max",
@@ -59,7 +59,9 @@ function BetForm({
 
   const nShares = parseFloat(shares) || 0;
   const nPrice = parseFloat(price) || 0;
-  const fee = polymarketFee(nPrice, nShares);
+  // per-market taker rate captured by the pipeline (geopolitics = 0 bps)
+  const feeBps = market.feeBps ?? DEFAULT_FEE_BPS;
+  const fee = polymarketFee(nPrice, nShares, feeBps);
   const cost = (nShares * nPrice) / 100 + fee;
 
   return (
@@ -93,9 +95,9 @@ function BetForm({
       />
       <span
         className="muted"
-        title="Polymarket taker fee = rate × min(p, 1−p) × shares. Geopolitics markets currently trade fee-free (0 bps); recorded per bet so P&L adjusts if fees turn on."
+        title="Polymarket taker fee = shares × rate × p × (1−p), per docs.polymarket.com. Rates by category: crypto 7%, sports 3%, politics/finance/tech 4%, economics/culture/weather 5% — geopolitics/world-events markets are fee-free. This market's rate is recorded on the bet."
       >
-        ¢ = ${cost.toFixed(2)} · fee ${fee.toFixed(2)}
+        ¢ = ${cost.toFixed(2)} · fee ${fee.toFixed(2)} ({feeRateLabel(feeBps)})
       </span>
       <span className="muted">on</span>
       <input
@@ -121,7 +123,7 @@ function BetForm({
               opened && opened !== today
                 ? `${opened}T12:00:00.000Z`
                 : new Date().toISOString(),
-            ...(DEFAULT_FEE_BPS > 0 ? { feeBps: DEFAULT_FEE_BPS } : {}),
+            ...(feeBps > 0 ? { feeBps } : {}),
           });
           onClose();
         }}
@@ -257,7 +259,7 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
           {event.type === "horizon" && (
             <div className="toggle">
               <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>Total</button>
-              <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>Day</button>
+              <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>Daily</button>
             </div>
           )}
           <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
@@ -315,8 +317,14 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
                       />
                     </td>
                     <td className="flags">
-                      {r.isPeak && <span className="badge b-peak">PEAK</span>}
-                      {r.isInversion && <span className="badge b-inv">INV</span>}
+                      {r.isPeak && (
+                        <span
+                          className="badge b-peak"
+                          title="Highest cost of coverage per day — the implied date the market currently believes the event will happen"
+                        >
+                          PEAK
+                        </span>
+                      )}
                       {r.isCheap && <span className="badge b-cheap">CHEAP</span>}
                       {r.isNegativeMarginal && <span className="badge b-neg" title="Longer deadline priced below shorter — inconsistent pricing">NEG</span>}
                     </td>

@@ -73,7 +73,7 @@ function BrowseCard({
   group: EventGroup;
   live: LivePriceMap;
   watchlist: Set<string>;
-  /** bets on this group's markets — set in bets scope to show position strips */
+  /** open bets on this group's markets — shown as position strips (V0.153: every scope) */
   bets?: Bet[];
   onToggleWatch: (id: string) => void;
   regionName: Map<string, string>;
@@ -355,7 +355,7 @@ export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWat
               group={g}
               live={live}
               watchlist={watchlist}
-              bets={scope === "bets" ? groupBets.get(g.key) : undefined}
+              bets={groupBets.get(g.key)}
               onToggleWatch={onToggleWatch}
               regionName={regionName}
               regionOfCountry={regionOfCountry}

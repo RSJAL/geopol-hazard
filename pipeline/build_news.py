@@ -44,6 +44,44 @@ DIRECT_FEEDS = [
     "https://www.france24.com/en/rss",
 ]
 
+# ── X/Twitter whitelist (V0.153 Wiz Patch) ───────────────────────────────────
+# OSINT + breaking-news accounts for moment-to-moment coverage, fetched via
+# Nitter RSS mirrors (X has no public RSS). Geography tags are assigned from
+# each account's recent coverage focus — Ukraine/Russia trackers get europe,
+# Levant/Iran watchers get mena, Pentagon correspondents get n_america+mena —
+# until the planned AI relevance tagger replaces this hand-tuned table.
+# Region ids must mirror REGION_PATTERNS / the catalog taxonomy.
+X_ACCOUNTS = [
+    # (handle, display name, type: osint|breaking, home regions)
+    ("Osinttechnical", "OSINT Technical",     "osint",    ["europe", "mena"]),
+    ("IntelDoge",      "Intel Doge",          "osint",    ["mena", "europe", "e_asia"]),
+    ("hey_itsmyturn",  "Shin",                "osint",    ["mena"]),
+    ("AJSyriaNowN",    "سوريا الآن",          "breaking", ["mena"]),
+    ("AlertLosAngeles", "Los Angeles Alerts", "osint",    ["n_america"]),
+    ("NotWoofers",     "Woofers",             "osint",    ["mena"]),
+    ("lookner",        "Steve Lookner",       "osint",    ["mena", "europe", "n_america"]),
+    ("Faytuks",        "Faytuks News",        "osint",    ["europe", "mena"]),
+    ("LBCI_NEWS",      "LBCI Lebanon News",   "breaking", ["mena"]),
+    ("AsharqNewsBrk",  "Asharq Breaking",     "breaking", ["mena"]),
+    ("leventkemaI",    "Levent Kemal",        "osint",    ["mena"]),
+    ("AJABreaking",    "Al Jazeera عاجل",     "breaking", ["mena"]),
+    ("idreesali114",   "Idrees Ali",          "breaking", ["n_america", "mena"]),
+    ("QalaatM",        "QalaatM",             "osint",    ["mena"]),
+    ("wartranslated",  "WarTranslated",       "osint",    ["europe"]),
+    ("no_itsmyturn",   "Aleph",               "osint",    ["mena"]),
+]
+
+# tried in order per account; instances rot, so failures are per-account soft
+NITTER_INSTANCES = ["https://nitter.net", "https://xcancel.com"]
+MAX_TWEETS_PER_ACCOUNT = 20
+MAX_TWEET_AGE_DAYS = 3  # tweets are moment-to-moment; stale ones are noise
+
+# breaking-news accounts tweet sports too; account region tags would smuggle
+# a World Cup result in as MENA coverage, so drop obvious sports posts
+SPORT_NOISE = re.compile(
+    r"world cup|fifa|premier league|champions league|\bnba\b|olympi"
+    r"|كأس العالم|منتخب|مباراة|الدوري|هدف", re.IGNORECASE)
+
 # Google News topic searches (rounded out with region tagging keywords below).
 # Google News aggregates Reuters/AP which have no free direct feeds.
 GNEWS_QUERIES = [
@@ -252,28 +290,60 @@ def build_news(catalog_path: Path, max_articles: int) -> dict:
             raw.append(it)
         time.sleep(0.3)
 
+    # X accounts via Nitter mirrors — instances rot, so fail soft per account
+    for handle, display, stype, acct_regions in X_ACCOUNTS:
+        feed = ""
+        for inst in NITTER_INSTANCES:
+            feed = fetch(session, f"{inst}/{handle}/rss")
+            if feed:
+                break
+        items = parse_feed(feed)[:MAX_TWEETS_PER_ACCOUNT] if feed else []
+        print(f"  x     : @{handle} ({len(items)} tweets)")
+        for it in items:
+            if it["title"].startswith("R to "):
+                continue  # replies are noise; retweets ("RT by") are curation
+            if SPORT_NOISE.search(it["title"]):
+                continue
+            it["domain"] = "x.com"
+            # rewrite the mirror link to the canonical x.com status URL
+            it["link"] = re.sub(r"https?://[^/]+", "https://x.com", it["link"]).split("#")[0]
+            it["x_display"] = display
+            it["x_type"] = stype
+            it["x_regions"] = acct_regions
+            raw.append(it)
+        time.sleep(0.3)
+
+    now = datetime.now(timezone.utc)
     seen_titles: set[str] = set()
     articles = []
     for it in raw:
-        if it["domain"] not in WHITELIST:
+        is_x = "x_type" in it
+        if not is_x and it["domain"] not in WHITELIST:
             continue
         key = re.sub(r"[^a-z0-9]+", "", it["title"].lower())[:80]
         if not key or key in seen_titles:
             continue
         seen_titles.add(key)
 
+        when = _parse_when(it["pub"])
+        if is_x and (when is None or (now - when).days >= MAX_TWEET_AGE_DAYS):
+            continue  # stale tweets defeat the point of the X feed
+
         text = it["title"] + " " + it.get("desc", "")[:300]
         regions = match_regions(text)
+        if is_x:
+            # account geography tags guarantee a home; text can add more
+            regions = sorted(set(regions) | set(it["x_regions"]))
         event_ids = match_events(text, regions, ev_keys)
         if not regions and not event_ids:
             continue  # not geopolitics-relevant to our catalog
 
-        when = _parse_when(it["pub"])
         articles.append({
             "id": hashlib.sha1(key.encode()).hexdigest()[:12],
             "title": it["title"],
             "url": it["link"],
-            "source": WHITELIST[it["domain"]],
+            "source": it["x_display"] if is_x else WHITELIST[it["domain"]],
+            "sourceType": it.get("x_type", "press"),
             "publishedAt": when.isoformat(timespec="seconds") if when else None,
             "regions": regions,
             "eventIds": event_ids,
@@ -283,9 +353,13 @@ def build_news(catalog_path: Path, max_articles: int) -> dict:
     articles.sort(key=lambda a: a["publishedAt"] or "", reverse=True)
     articles = articles[:max_articles]
 
+    sources = sorted(set(WHITELIST.values()))
+    if any(a["sourceType"] != "press" for a in articles):
+        sources.append("X OSINT/breaking")
+
     return {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "sources": sorted(set(WHITELIST.values())),
+        "sources": sources,
         "articles": articles,
     }
 

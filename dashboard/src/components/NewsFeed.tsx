@@ -32,7 +32,10 @@ export default function NewsFeed({
           <div className="news-main">
             <div className="news-title">{a.title}</div>
             <div className="news-meta">
-              {a.source} · {timeAgo(a.publishedAt)} ago
+              {a.source}
+              {a.sourceType === "osint" && <span className="news-type"> · OSINT</span>}
+              {a.sourceType === "breaking" && <span className="news-type"> · ⚡ breaking</span>}
+              {" · "}{timeAgo(a.publishedAt)} ago
             </div>
           </div>
           {sentimentBadge(a.sentiment)}

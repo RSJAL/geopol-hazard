@@ -244,7 +244,7 @@ a:hover { text-decoration: underline; }
 .ladder .flags { white-space: nowrap; }
 
 .bar {
-  height: 10px; background: var(--sel); border-radius: 2px; opacity: 0.75;
+  height: 10px; background: var(--accent); border-radius: 2px; opacity: 0.75;
   min-width: 2px;
 }
 .bar-peak { background: var(--spike); }
@@ -255,6 +255,10 @@ a:hover { text-decoration: underline; }
   padding: 1px 5px; border-radius: 3px; margin-left: 3px; letter-spacing: 0.04em;
 }
 .b-peak { background: #2d1515; color: var(--spike); border: 1px solid #ff6b6b66; }
+.b-active {
+  background: var(--sel-dim); color: var(--sel); border: 1px solid #00c89666;
+  margin: 0 5px 0 0;
+}
 .b-inv { background: #2d2210; color: var(--inv); border: 1px solid #ffa72666; }
 .b-cheap { background: #102d20; color: var(--cheap); border: 1px solid #66bb6a66; }
 .b-neg { background: #2d1515; color: var(--spike); border: 1px dashed #ff6b6b66; }
@@ -267,7 +271,7 @@ a:hover { text-decoration: underline; }
   overflow: hidden; text-overflow: ellipsis;
 }
 .bucket-bar-wrap { flex: 1; background: var(--head); border-radius: 3px; height: 12px; }
-.bucket-bar { height: 12px; background: var(--sel); border-radius: 3px; opacity: 0.8; }
+.bucket-bar { height: 12px; background: var(--accent); border-radius: 3px; opacity: 0.8; }
 .bucket-val {
   flex: 0 0 52px; text-align: right; font-size: 0.76rem; font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -413,6 +417,7 @@ a:hover { text-decoration: underline; }
   border-radius: 4px; padding: 4px 6px; font-size: 0.74rem; outline: none;
 }
 .bet-form input { width: 70px; }
+.bet-form input[type="date"] { width: 136px; } /* V0.153: date was clipped */
 .bet-form-spacer { flex: 1; }
 .bet-form-close {
   flex: 0 0 auto; width: auto; padding: 4px 9px; color: var(--muted);
@@ -489,6 +494,8 @@ a:hover { text-decoration: underline; }
 .news-main { flex: 1; min-width: 0; }
 .news-title { font-size: 0.76rem; line-height: 1.3; }
 .news-meta { font-size: 0.64rem; color: var(--muted); margin-top: 2px; }
+.news-type { color: var(--inv); letter-spacing: 0.03em; }
+.news-type-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 .sent {
   font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 10px;
   white-space: nowrap; flex-shrink: 0;
