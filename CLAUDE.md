@@ -9,7 +9,8 @@ Quick facts:
 - Frontend: `dashboard/` (React+Vite+TS) — `cd dashboard && npm run dev|build`
 - Data: `python pipeline/build_catalog.py` then `python pipeline/build_news.py`
   (writes to `dashboard/public/data/`); a 30-min GitHub Actions cron does the same
-  and triggers the Pages deploy.
+  and triggers the Pages deploy. build_news also pulls 16 whitelisted X accounts
+  via nitter.net (fails soft per account if the mirror is down).
 - Private design docs live in `Design Docs/*.docx` (gitignored); legacy Streamlit
   prototype in `v1/` (kept, unused).
 - Always `git pull --rebase` before pushing (catalog bot commits to main every
@@ -20,5 +21,8 @@ Quick facts:
 - Verify UI changes with headless Chrome screenshots against `vite preview`
   (use a fresh port; stopped preview tasks can orphan node servers that serve
   stale builds — kill via `Get-NetTCPConnection -LocalPort <p> | Stop-Process`).
+  Append `?demo=1` to seed in-memory sample bets so the bets/portfolio UI is
+  headless-verifiable. Routes: `#/markets` (Browse layout; `#/browse` legacy
+  alias), `#/portfolio`, `#/event/:id`.
 - Odds convention: total odds are the display default; daily odds are
   compounded (`1 − (1−P)^(1/days)`), never `P/days`.
