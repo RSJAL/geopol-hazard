@@ -68,7 +68,27 @@ a:hover { text-decoration: underline; }
 .tile-value { font-size: 1.15rem; font-weight: 700; margin-top: 1px; }
 .tile-value.accent { color: var(--accent); }
 .tile-value.spike { color: var(--spike); }
-.tile-value.inv { color: var(--inv); }
+
+/* header tiles (V0.15x): sub-lines, clickable spike, force-refresh button */
+.head-tiles { align-items: stretch; }
+.head-tiles .tile {
+  display: flex; flex-direction: column; justify-content: center;
+  align-items: center;
+}
+.tile-sub {
+  font-size: 0.58rem; color: var(--muted); margin-top: 1px;
+  max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+a.tile-link { color: inherit; }
+.tile-link:hover { border-color: var(--sel); text-decoration: none; }
+.tile-go { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+.tile-link:hover .tile-go { color: var(--sel); }
+button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text); }
+.tile-refresh:hover:not(:disabled) { border-color: var(--sel); }
+.tile-refresh:disabled { cursor: default; }
+.refresh-icon { color: var(--sel); }
+.refresh-icon.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .layout {

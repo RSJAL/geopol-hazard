@@ -111,18 +111,16 @@ export interface CatalogStats {
   nEvents: number;
   nMarkets: number;
   nHorizon: number;
-  totalVolume: number;
+  totalVolume24h: number;
   spikeRatio: number;
   spikeEvent: string;
-  totalInversions: number;
-  cheapWindows: number;
+  spikeEventId: string;
 }
 
 export function catalogStats(events: CatalogEvent[], live: LivePriceMap): CatalogStats {
   let spikeRatio = 0;
   let spikeEvent = "";
-  let totalInversions = 0;
-  let cheapWindows = 0;
+  let spikeEventId = "";
 
   for (const ev of events) {
     if (ev.type !== "horizon") continue;
@@ -133,21 +131,19 @@ export function catalogStats(events: CatalogEvent[], live: LivePriceMap): Catalo
       if (ratio > spikeRatio) {
         spikeRatio = ratio;
         spikeEvent = ev.title;
+        spikeEventId = ev.id;
       }
     }
-    totalInversions += rows.filter((r) => r.isInversion).length;
-    cheapWindows += rows.filter((r) => r.isCheap).length;
   }
 
   return {
     nEvents: events.length,
     nMarkets: events.reduce((s, e) => s + e.markets.length, 0),
     nHorizon: events.filter((e) => e.type === "horizon").length,
-    totalVolume: events.reduce((s, e) => s + e.volume, 0),
+    totalVolume24h: events.reduce((s, e) => s + e.volume24h, 0),
     spikeRatio,
     spikeEvent,
-    totalInversions,
-    cheapWindows,
+    spikeEventId,
   };
 }
 

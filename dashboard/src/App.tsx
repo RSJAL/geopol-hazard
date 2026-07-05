@@ -212,6 +212,25 @@ export default function App() {
     return () => window.clearInterval(t);
   }, [liveTargets.join(","), refreshLive]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** header force-refresh: every catalog event, not just the 60s live targets */
+  const forceRefresh = useCallback(async () => {
+    if (!catalog) return;
+    setRefreshing(true);
+    try {
+      const prices = await fetchLivePrices(catalog.events.map((e) => e.id));
+      setLive((prev) => {
+        const next = new Map(prev);
+        for (const [k, v] of prices) next.set(k, v);
+        return next;
+      });
+      setLastLiveAt(Date.now());
+    } catch {
+      /* transient network failure — snapshot prices remain */
+    } finally {
+      setRefreshing(false);
+    }
+  }, [catalog]);
+
   // ── Derived ─────────────────────────────────────────────────────────────────
   const stats = useMemo(
     () => (catalog ? catalogStats(catalog.events, live) : null),
@@ -294,7 +313,7 @@ export default function App() {
             <a href="#/portfolio" className={route.page === "portfolio" ? "on" : ""}>Portfolio</a>
           </nav>
         </div>
-        <div className="tiles">
+        <div className="tiles head-tiles">
           <div className="tile">
             <div className="tile-label">Events</div>
             <div className="tile-value">{stats.nEvents}</div>
@@ -307,18 +326,40 @@ export default function App() {
             <div className="tile-label">Deadline ladders</div>
             <div className="tile-value accent">{stats.nHorizon}</div>
           </div>
-          <div className="tile">
-            <div className="tile-label">Volume</div>
-            <div className="tile-value">{fmtVolume(stats.totalVolume)}</div>
+          <div className="tile" title="Volume traded in the last 24 hours across all tracked markets">
+            <div className="tile-label">24h volume</div>
+            <div className="tile-value">{fmtVolume(stats.totalVolume24h)}</div>
           </div>
-          <div className="tile" title={stats.spikeEvent}>
-            <div className="tile-label">Sharpest spike</div>
-            <div className="tile-value spike">{stats.spikeRatio.toFixed(0)}×</div>
-          </div>
-          <div className="tile">
-            <div className="tile-label">Inversions</div>
-            <div className="tile-value inv">{stats.totalInversions}</div>
-          </div>
+          {stats.spikeEventId && (
+            <a
+              className="tile tile-link"
+              href={`#/event/${stats.spikeEventId}`}
+              title={`${stats.spikeEvent} — largest gap between a deadline ladder's highest and lowest implied daily odds. Click to open.`}
+            >
+              <div className="tile-label">Sharpest spike</div>
+              <div className="tile-value spike">
+                {stats.spikeRatio.toFixed(0)}×
+                <span className="tile-go"> ↗</span>
+              </div>
+              <div className="tile-sub">{stats.spikeEvent}</div>
+            </a>
+          )}
+          <button
+            className="tile tile-refresh"
+            onClick={forceRefresh}
+            disabled={refreshing}
+            title="Fetch live prices for every tracked market right now (auto-refresh covers watchlist, bets, and open pages every 60s)"
+          >
+            <div className="tile-label">Prices</div>
+            <div className={`tile-value refresh-icon${refreshing ? " spinning" : ""}`}>⟳</div>
+            <div className="tile-sub">
+              {refreshing
+                ? "updating…"
+                : lastLiveAt
+                  ? `live · ${Math.max(0, Math.round((Date.now() - lastLiveAt) / 1000))}s ago`
+                  : "refresh now"}
+            </div>
+          </button>
         </div>
       </header>
 
