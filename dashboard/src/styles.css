@@ -195,6 +195,7 @@ a:hover { text-decoration: underline; }
 }
 .detail-title { font-size: 1rem; font-weight: 700; }
 .detail-meta { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+.detail-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .toggle { display: flex; border: 1px solid var(--grid); border-radius: 6px; overflow: hidden; flex-shrink: 0; }
 .toggle button {
@@ -495,8 +496,7 @@ a:hover { text-decoration: underline; }
   stroke: var(--accent); stroke-width: 1; rx: 3;
 }
 
-/* single per-event bet launcher (V0.151) */
-.bet-launch { display: flex; justify-content: flex-end; margin: 2px 0 10px; }
+/* single per-event bet form (V0.151; launcher lives in the detail header) */
 .bet-form .bet-market { max-width: 240px; }
 
 /* ── Catalog panel: V0.15 two-state (regions list → scoped market list) ──── */

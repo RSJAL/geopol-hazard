@@ -237,13 +237,27 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
             )}
           </div>
         </div>
-        {event.type === "horizon" && (
-          <div className="toggle">
-            <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>Total</button>
-            <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>Day</button>
-          </div>
-        )}
+        <div className="detail-actions">
+          {event.type === "horizon" && (
+            <div className="toggle">
+              <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>Total</button>
+              <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>Day</button>
+            </div>
+          )}
+          <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
+        </div>
       </div>
+
+      {betInit !== null && betOptions.length > 0 && (
+        <BetForm
+          event={event}
+          options={betOptions}
+          initialId={betInit}
+          live={live}
+          onAddBet={onAddBet}
+          onClose={() => setBetInit(null)}
+        />
+      )}
 
       {event.type === "horizon" && (
         <>
@@ -296,9 +310,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
               })}
             </tbody>
           </table>
-          <div className="bet-launch">
-            <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
-          </div>
         </>
       )}
 
@@ -322,9 +333,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
                   </div>
                 );
               })}
-          </div>
-          <div className="bet-launch">
-            <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
           </div>
         </>
       )}
@@ -359,25 +367,11 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
                     <b>{fmtVolume(m.volume)}</b>
                   </div>
                 </div>
-                <div className="binary-actions">
-                  {posChips(m)}
-                  <button className="bet-btn" onClick={() => toggleBetForm(m.id)}>$ Record bet</button>
-                </div>
+                <div className="binary-actions">{posChips(m)}</div>
               </div>
             );
           })}
         </div>
-      )}
-
-      {betInit !== null && betOptions.length > 0 && (
-        <BetForm
-          event={event}
-          options={betOptions}
-          initialId={betInit}
-          live={live}
-          onAddBet={onAddBet}
-          onClose={() => setBetInit(null)}
-        />
       )}
 
       <div className="chart-head">
