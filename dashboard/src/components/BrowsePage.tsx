@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Bet, Catalog, CatalogEvent, LivePriceMap } from "../lib/types";
 import { anchorCountry, buildLadder, deadlineLabel, fmtVolume, liveYes } from "../lib/analytics";
+import { isOpen } from "../lib/bets";
 import { buildGroups, type EventGroup } from "../lib/grouping";
 import { BetStrip } from "./MarketsPage";
 
@@ -200,7 +201,7 @@ export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWat
     const m = new Map<string, Bet[]>();
     for (const g of groups) {
       const marketIds = new Set(g.events.flatMap((e) => e.markets.map((mk) => mk.id)));
-      const bs = bets.filter((b) => !b.closedAt && marketIds.has(b.marketId));
+      const bs = bets.filter((b) => isOpen(b) && marketIds.has(b.marketId));
       if (bs.length) m.set(g.key, bs);
     }
     return m;
@@ -237,6 +238,19 @@ export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWat
     }
     return { regionCounts, countryCounts, globalCount };
   }, [scopedGroups, geoOf]);
+
+  // a scope switch can empty the selected geography (its sidebar entry
+  // disappears but the filter would silently stick) — reset to All markets
+  useEffect(() => {
+    if (!geo) return;
+    const alive =
+      geo === "__global__"
+        ? globalCount > 0
+        : geo.startsWith("country:")
+          ? (countryCounts.get(geo.slice(8)) ?? 0) > 0
+          : (regionCounts.get(geo) ?? 0) > 0;
+    if (!alive) setGeo(null);
+  }, [geo, regionCounts, countryCounts, globalCount]);
 
   const topCountries = useMemo(
     () =>

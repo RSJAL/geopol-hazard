@@ -139,9 +139,11 @@ function CloseForm({
   onCancel: () => void;
 }) {
   const [price, setPrice] = useState(() => sidePrice(bet, market, live).toFixed(1));
-  const nPrice = parseFloat(price) || 0;
+  const nPrice = parseFloat(price);
+  // reject blank/garbled input outright — `|| 0` would silently record a 0¢ sale
+  const priceOk = Number.isFinite(nPrice) && nPrice >= 0 && nPrice <= 100;
   const bps = bet.feeBps ?? DEFAULT_FEE_BPS;
-  const saleFee = polymarketFee(nPrice, bet.shares, bps);
+  const saleFee = priceOk ? polymarketFee(nPrice, bet.shares, bps) : 0;
   return (
     <div className="bet-form" onClick={(e) => e.stopPropagation()}>
       <span className="bet-form-label">close {bet.side} {bet.shares} — sold at</span>
@@ -150,12 +152,12 @@ function CloseForm({
         onChange={(e) => setPrice(e.target.value)}
       />
       <span className="muted">
-        ¢ → {money((bet.shares * nPrice) / 100 - saleFee)}
+        ¢ → {priceOk ? money((bet.shares * nPrice) / 100 - saleFee) : "—"}
         {saleFee > 0 && ` (incl ${money(saleFee)} fee)`}
       </span>
       <button
         className="btn btn-primary"
-        disabled={nPrice < 0 || nPrice > 100}
+        disabled={!priceOk}
         onClick={() => onUpdateBet(closeBet(bet, nPrice, false))}
       >
         close at price
@@ -219,10 +221,21 @@ export default function PortfolioPage({
     const openTs = bets.map((b) => new Date(b.openedAt).getTime() / 1000);
     const tFirst = Math.min(...openTs);
     const now = Date.now() / 1000;
-    const ts = new Set<number>([tFirst, now]);
-    for (const h of histories.values()) for (const p of h) if (p.t >= tFirst) ts.add(p.t);
-    for (const t of openTs) ts.add(t);
-    for (const b of bets) if (b.closedAt) ts.add(new Date(b.closedAt).getTime() / 1000);
+    // clamp the domain to the fetched history window — CLOB only returned
+    // `range` worth of points, so anything earlier would render as a fake
+    // flat entry-price segment indistinguishable from real prices
+    const rangeSec: Partial<Record<HistoryInterval, number>> =
+      { "1d": 86_400, "1w": 7 * 86_400, "1m": 30 * 86_400 };
+    const cut = rangeSec[range];
+    const tStart = cut ? Math.max(tFirst, now - cut) : tFirst;
+    const ts = new Set<number>([tStart, now]);
+    for (const h of histories.values()) for (const p of h) if (p.t >= tStart) ts.add(p.t);
+    for (const t of openTs) if (t >= tStart) ts.add(t);
+    for (const b of bets) {
+      if (!b.closedAt) continue;
+      const ct = new Date(b.closedAt).getTime() / 1000;
+      if (ct >= tStart) ts.add(ct);
+    }
     let grid = [...ts].filter((t) => t <= now).sort((a, b) => a - b);
     if (grid.length > 400) {
       const step = Math.ceil(grid.length / 400);
@@ -255,7 +268,7 @@ export default function PortfolioPage({
       }
       return { t, value, invested };
     });
-  }, [histories, bets, marketIndex, live]);
+  }, [histories, bets, marketIndex, live, range]);
 
   const missingHist =
     histories !== null &&
@@ -310,7 +323,8 @@ export default function PortfolioPage({
         </tr>,
         !closedTable && closingId === b.id && (
           <tr key={`${b.id}-close`} className="bet-row">
-            <td colSpan={8}>
+            {/* open table has 9 columns (incl. Now + actions) */}
+            <td colSpan={9}>
               <CloseForm
                 bet={b} market={hit?.market} live={live}
                 onUpdateBet={(nb) => { onUpdateBet(nb); setClosingId(null); }}
