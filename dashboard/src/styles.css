@@ -52,7 +52,7 @@ a:hover { text-decoration: underline; }
   background: var(--panel); border: 1px solid var(--grid); border-radius: 10px;
   padding: 10px 18px; margin-bottom: 12px;
 }
-.title { font-size: 1.25rem; letter-spacing: 0.05em; color: var(--accent); margin: 0; }
+.title { font-size: 1.25rem; letter-spacing: 0.05em; color: var(--sel); margin: 0; }
 .subtitle { font-size: 0.72rem; color: var(--muted); margin: 2px 0 0; }
 .live-dot { color: var(--cheap); }
 
@@ -67,27 +67,18 @@ a:hover { text-decoration: underline; }
 }
 .tile-value { font-size: 1.15rem; font-weight: 700; margin-top: 1px; }
 .tile-value.accent { color: var(--accent); }
-.tile-value.spike { color: var(--spike); }
 
-/* header tiles (V0.15x): sub-lines, clickable spike, force-refresh button */
-.head-tiles { align-items: stretch; }
-.head-tiles .tile {
-  display: flex; flex-direction: column; justify-content: center;
-  align-items: center;
+/* compact force-refresh (V0.152): quiet chip beside the header tiles */
+.refresh-btn {
+  align-self: center; display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid transparent; border-radius: 12px;
+  color: var(--muted); font-size: 0.66rem; font-family: inherit;
+  padding: 4px 9px; cursor: pointer; white-space: nowrap;
 }
-.tile-sub {
-  font-size: 0.58rem; color: var(--muted); margin-top: 1px;
-  max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-a.tile-link { color: inherit; }
-.tile-link:hover { border-color: var(--sel); text-decoration: none; }
-.tile-go { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
-.tile-link:hover .tile-go { color: var(--sel); }
-button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text); }
-.tile-refresh:hover:not(:disabled) { border-color: var(--sel); }
-.tile-refresh:disabled { cursor: default; }
-.refresh-icon { color: var(--sel); }
-.refresh-icon.spinning { animation: spin 1s linear infinite; }
+.refresh-btn:hover:not(:disabled) { border-color: var(--grid); color: var(--text); }
+.refresh-btn:disabled { cursor: default; }
+.refresh-icon { font-size: 0.85rem; line-height: 1; }
+.refresh-icon.spinning { display: inline-block; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
@@ -253,7 +244,7 @@ button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text);
 .ladder .flags { white-space: nowrap; }
 
 .bar {
-  height: 10px; background: var(--accent); border-radius: 2px; opacity: 0.75;
+  height: 10px; background: var(--sel); border-radius: 2px; opacity: 0.75;
   min-width: 2px;
 }
 .bar-peak { background: var(--spike); }
@@ -276,7 +267,7 @@ button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text);
   overflow: hidden; text-overflow: ellipsis;
 }
 .bucket-bar-wrap { flex: 1; background: var(--head); border-radius: 3px; height: 12px; }
-.bucket-bar { height: 12px; background: var(--accent); border-radius: 3px; opacity: 0.8; }
+.bucket-bar { height: 12px; background: var(--sel); border-radius: 3px; opacity: 0.8; }
 .bucket-val {
   flex: 0 0 52px; text-align: right; font-size: 0.76rem; font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -289,7 +280,7 @@ button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text);
   padding: 8px 4px; font-size: 0.8rem;
 }
 .binary-main { display: flex; align-items: baseline; gap: 10px; }
-.binary-yes { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.binary-yes { font-size: 1.5rem; font-weight: 700; color: var(--sel); }
 .binary-side { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
 .binary-stats { display: flex; gap: 22px; align-items: center; }
 .bstat { display: flex; flex-direction: column; gap: 1px; }
@@ -688,13 +679,13 @@ button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text);
 .pf-panel { padding: 14px; }
 .pf-chart { position: relative; }
 .pf-chart svg { width: 100%; height: auto; display: block; }
-.pf-line-value { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+.pf-line-value { fill: none; stroke: var(--sel); stroke-width: 1.8; }
 .pf-line-invested {
   fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4;
 }
-.pf-dot-value { fill: var(--accent); stroke: #0f1117; stroke-width: 1; }
+.pf-dot-value { fill: var(--sel); stroke: #0f1117; stroke-width: 1; }
 .pf-dot-invested { fill: var(--muted); stroke: #0f1117; stroke-width: 1; }
-.pf-key-value { color: var(--accent); }
+.pf-key-value { color: var(--sel); }
 .pf-key-invested { color: var(--muted); }
 .pf-note { font-size: 0.66rem; color: var(--muted); margin-top: 6px; }
 .pf-table .pf-label {
@@ -707,12 +698,6 @@ button.tile-refresh { cursor: pointer; font-family: inherit; color: var(--text);
 .pf-close-btn:hover { border-color: var(--inv); color: var(--inv); }
 .pf-won { flex: initial; color: var(--cheap); border-color: #66bb6a66; }
 .pf-lost { flex: initial; color: var(--spike); border-color: #ff6b6b66; }
-.pf-link {
-  display: block; font-size: 0.7rem; color: var(--muted);
-  background: var(--head); border: 1px solid var(--grid); border-radius: 6px;
-  padding: 6px 9px; margin-bottom: 8px;
-}
-.pf-link:hover { color: var(--sel); border-color: var(--sel); text-decoration: none; }
 
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; }

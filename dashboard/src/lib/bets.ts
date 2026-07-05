@@ -72,6 +72,27 @@ export function closeBet(bet: Bet, exitPrice: number, settled: boolean): Bet {
   return { ...bet, exitPrice, settled, closedAt: new Date().toISOString() };
 }
 
+/**
+ * Close `soldShares` of a position (V0.152). A full-size sale closes the bet;
+ * a partial sale splits it: a closed record for the sold slice (new id) and
+ * the original bet continuing open with the remaining shares (same id, so
+ * map cards / rail entries keep tracking it).
+ */
+export function closeBetPartial(
+  bet: Bet,
+  soldShares: number,
+  exitPrice: number,
+  settled: boolean,
+): Bet[] {
+  if (soldShares >= bet.shares) return [closeBet(bet, exitPrice, settled)];
+  const closed: Bet = {
+    ...closeBet(bet, exitPrice, settled),
+    id: newBetId(),
+    shares: soldShares,
+  };
+  return [closed, { ...bet, shares: bet.shares - soldShares }];
+}
+
 export interface PortfolioSummary {
   nOpen: number;
   nClosed: number;

@@ -28,9 +28,6 @@ export default function BetsPanel({
     return { bet: b, hit, pnl };
   });
   const totPnl = totValue - totCost;
-  const realized = bets
-    .filter((b) => !isOpen(b))
-    .reduce((s, b) => s + betPnl(b, marketIndex.get(b.marketId)?.market, live).pnl, 0);
   const nClosed = bets.length - openBets.length;
 
   return (
@@ -53,16 +50,6 @@ export default function BetsPanel({
           </div>
         </div>
       )}
-
-      <a className="pf-link" href="#/portfolio">
-        💼 portfolio: value graph, close positions, history
-        {nClosed > 0 && (
-          <> · realized <b className={realized >= 0 ? "up" : "down"}>
-            {realized >= 0 ? "+" : "−"}${Math.abs(realized).toFixed(2)}
-          </b></>
-        )}
-        {" →"}
-      </a>
 
       <div className="watch-actions">
         <button className="btn" onClick={() => exportBets(bets)} disabled={!bets.length}>

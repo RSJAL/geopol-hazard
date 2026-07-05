@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
 import {
-  betPnl, closeBet, exportBets, importBets, isOpen, portfolioSummary, sidePrice,
+  betPnl, closeBetPartial, exportBets, importBets, isOpen, portfolioSummary, sidePrice,
 } from "../lib/bets";
 import { DEFAULT_FEE_BPS, polymarketFee } from "../lib/fees";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
@@ -10,7 +10,8 @@ interface Props {
   bets: Bet[];
   marketIndex: Map<string, { market: CatalogMarket; event: CatalogEvent }>;
   live: LivePriceMap;
-  onUpdateBet: (bet: Bet) => void;
+  /** close/settle: full close replaces the bet, partial close splits it in two */
+  onReplaceBet: (id: string, replacements: Bet[]) => void;
   onRemoveBet: (id: string) => void;
   onImport: (bets: Bet[]) => void;
 }
@@ -128,43 +129,66 @@ function EquityChart({ points }: { points: EquityPoint[] }) {
   );
 }
 
-/** Inline close/settle editor for an open position. */
+/** Inline close/settle editor for an open position. Selling fewer shares than
+ *  held records a partial close and keeps the rest open (V0.152). */
 function CloseForm({
-  bet, market, live, onUpdateBet, onCancel,
+  bet, market, live, onReplaceBet, onCancel,
 }: {
   bet: Bet;
   market: CatalogMarket | undefined;
   live: LivePriceMap;
-  onUpdateBet: (b: Bet) => void;
+  onReplaceBet: (id: string, replacements: Bet[]) => void;
   onCancel: () => void;
 }) {
   const [price, setPrice] = useState(() => sidePrice(bet, market, live).toFixed(1));
+  const [shares, setShares] = useState(String(bet.shares));
   const nPrice = parseFloat(price);
+  const nShares = parseFloat(shares);
   // reject blank/garbled input outright — `|| 0` would silently record a 0¢ sale
   const priceOk = Number.isFinite(nPrice) && nPrice >= 0 && nPrice <= 100;
+  const sharesOk = Number.isFinite(nShares) && nShares > 0 && nShares <= bet.shares;
   const bps = bet.feeBps ?? DEFAULT_FEE_BPS;
-  const saleFee = priceOk ? polymarketFee(nPrice, bet.shares, bps) : 0;
+  const saleFee = priceOk && sharesOk ? polymarketFee(nPrice, nShares, bps) : 0;
+  const partial = sharesOk && nShares < bet.shares;
   return (
     <div className="bet-form" onClick={(e) => e.stopPropagation()}>
-      <span className="bet-form-label">close {bet.side} {bet.shares} — sold at</span>
+      <span className="bet-form-label">sell</span>
+      <input
+        type="number" min="1" max={bet.shares} step="1" value={shares}
+        onChange={(e) => setShares(e.target.value)}
+      />
+      <span className="muted">of {bet.shares} {bet.side} at</span>
       <input
         type="number" min="0" max="100" step="0.1" value={price}
         onChange={(e) => setPrice(e.target.value)}
       />
       <span className="muted">
-        ¢ → {priceOk ? money((bet.shares * nPrice) / 100 - saleFee) : "—"}
+        ¢ → {priceOk && sharesOk ? money((nShares * nPrice) / 100 - saleFee) : "—"}
         {saleFee > 0 && ` (incl ${money(saleFee)} fee)`}
+        {partial && ` · ${bet.shares - nShares} stay open`}
       </span>
       <button
         className="btn btn-primary"
-        disabled={!priceOk}
-        onClick={() => onUpdateBet(closeBet(bet, nPrice, false))}
+        disabled={!priceOk || !sharesOk}
+        onClick={() => onReplaceBet(bet.id, closeBetPartial(bet, nShares, nPrice, false))}
       >
-        close at price
+        {partial ? "close partial" : "close position"}
       </button>
       <span className="muted">or resolved:</span>
-      <button className="btn pf-won" onClick={() => onUpdateBet(closeBet(bet, 100, true))}>✓ won</button>
-      <button className="btn pf-lost" onClick={() => onUpdateBet(closeBet(bet, 0, true))}>✕ lost</button>
+      <button
+        className="btn pf-won"
+        title="Market resolved in your favor — all shares redeem at $1"
+        onClick={() => onReplaceBet(bet.id, closeBetPartial(bet, bet.shares, 100, true))}
+      >
+        ✓ won
+      </button>
+      <button
+        className="btn pf-lost"
+        title="Market resolved against you — all shares expire worthless"
+        onClick={() => onReplaceBet(bet.id, closeBetPartial(bet, bet.shares, 0, true))}
+      >
+        ✕ lost
+      </button>
       <span className="bet-form-spacer" />
       <button className="btn bet-form-close" onClick={onCancel}>cancel</button>
     </div>
@@ -172,7 +196,7 @@ function CloseForm({
 }
 
 export default function PortfolioPage({
-  bets, marketIndex, live, onUpdateBet, onRemoveBet, onImport,
+  bets, marketIndex, live, onReplaceBet, onRemoveBet, onImport,
 }: Props) {
   const [range, setRange] = useState<HistoryInterval>("1m");
   const [closingId, setClosingId] = useState<string | null>(null);
@@ -327,7 +351,7 @@ export default function PortfolioPage({
             <td colSpan={9}>
               <CloseForm
                 bet={b} market={hit?.market} live={live}
-                onUpdateBet={(nb) => { onUpdateBet(nb); setClosingId(null); }}
+                onReplaceBet={(id, reps) => { onReplaceBet(id, reps); setClosingId(null); }}
                 onCancel={() => setClosingId(null)}
               />
             </td>

@@ -101,7 +101,6 @@ function BrowseCard({
   const maxYes = Math.max(...rows.map((r) => r.yes), 1e-9);
 
   const totalVol = group.events.reduce((s, e) => s + e.volume, 0);
-  const nMarkets = group.events.reduce((s, e) => s + e.markets.length, 0);
   const watched = group.events.some((e) => watchlist.has(e.id));
   const region = rep.region ? regionName.get(rep.region) : null;
 
@@ -157,7 +156,6 @@ function BrowseCard({
       <div className="bw-foot">
         <span>{fmtVolume(totalVol)} Vol.</span>
         <span className="bw-foot-right">
-          {nMarkets} market{nMarkets !== 1 ? "s" : ""}
           <button
             className={`star${watched ? " on" : ""}`}
             title={watched ? "Remove from watchlist" : "Add to watchlist"}
@@ -178,7 +176,7 @@ function BrowseCard({
 export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWatch }: Props) {
   const [geo, setGeo] = useState<string | null>(null); // region id | "country:XXX" | "__global__"
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("volume");
+  const [sort, setSort] = useState<SortKey>("volume24h"); // 24h volume is the default view
   const [scope, setScope] = useState<Scope>("all");
 
   const regionOfCountry = useMemo(
@@ -324,26 +322,26 @@ export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWat
             <span className="bw-page-count"> · {shown.length}</span>
           </span>
           <div className="bw-tools">
-            <div className="toggle">
-              <button className={scope === "watch" ? "on" : ""} onClick={() => setScope("watch")}>
-                ★ Watchlist
-              </button>
-              <button className={scope === "bets" ? "on" : ""} onClick={() => setScope("bets")}>
-                $ Bets{groupBets.size ? ` (${groupBets.size})` : ""}
-              </button>
-              <button className={scope === "all" ? "on" : ""} onClick={() => setScope("all")}>
-                All
-              </button>
-            </div>
             <input
               className="search bw-search"
               placeholder="Search markets…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <div className="toggle">
+              <button className={scope === "watch" ? "on" : ""} title="Watchlist" onClick={() => setScope("watch")}>
+                ★
+              </button>
+              <button className={scope === "bets" ? "on" : ""} title="Open bets" onClick={() => setScope("bets")}>
+                $
+              </button>
+              <button className={scope === "all" ? "on" : ""} onClick={() => setScope("all")}>
+                All
+              </button>
+            </div>
             <select className="bw-sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-              <option value="volume">Volume</option>
               <option value="volume24h">24h volume</option>
+              <option value="volume">Volume</option>
               <option value="move">Biggest move</option>
               <option value="endDate">Nearest deadline</option>
             </select>

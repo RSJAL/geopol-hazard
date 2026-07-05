@@ -6,7 +6,8 @@ import { DEFAULT_FEE_BPS, polymarketFee } from "../lib/fees";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
 
-const LINE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a", "#ef5350", "#ab47bc", "#26c6da"];
+// lead series takes the default green (V0.152); the rest stay distinguishable
+const LINE_COLORS = ["#00c896", "#ffa726", "#4fc3f7", "#ef5350", "#ab47bc", "#26c6da"];
 
 const INTERVAL_LABEL: Record<HistoryInterval, string> = {
   "1d": "1D", "1w": "1W", "1m": "1M", max: "Max",
@@ -40,6 +41,7 @@ function BetForm({
   onAddBet: (bet: Bet) => void;
   onClose: () => void;
 }) {
+  const today = new Date().toISOString().slice(0, 10);
   const [marketId, setMarketId] = useState(initialId);
   const opt = options.find((o) => o.market.id === marketId) ?? options[0];
   const market = opt.market;
@@ -47,6 +49,7 @@ function BetForm({
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [shares, setShares] = useState("100");
   const [price, setPrice] = useState(yes.toFixed(1));
+  const [opened, setOpened] = useState(today); // backdatable (V0.152)
 
   // reset only when the SIDE or MARKET changes — a 60s live-price tick must
   // not clobber an entry price the user is typing
@@ -88,9 +91,18 @@ function BetForm({
         type="number" min="0.1" max="99.9" step="0.1" value={price}
         onChange={(e) => setPrice(e.target.value)} placeholder="entry ¢"
       />
-      <span className="muted">
-        ¢ = ${cost.toFixed(2)}{fee > 0 && ` (incl $${fee.toFixed(2)} fee)`}
+      <span
+        className="muted"
+        title="Polymarket taker fee = rate × min(p, 1−p) × shares. Geopolitics markets currently trade fee-free (0 bps); recorded per bet so P&L adjusts if fees turn on."
+      >
+        ¢ = ${cost.toFixed(2)} · fee ${fee.toFixed(2)}
       </span>
+      <span className="muted">on</span>
+      <input
+        type="date" value={opened} max={today}
+        title="Date the bet was placed — backdate to match your real entry; the portfolio chart starts each position at this date"
+        onChange={(e) => setOpened(e.target.value)}
+      />
       <span className="bet-form-spacer" />
       <button
         className="btn btn-primary"
@@ -104,7 +116,11 @@ function BetForm({
             side,
             shares: nShares,
             entryPrice: nPrice,
-            openedAt: new Date().toISOString(),
+            // backdated bets land at noon UTC of the chosen day; today = now
+            openedAt:
+              opened && opened !== today
+                ? `${opened}T12:00:00.000Z`
+                : new Date().toISOString(),
             ...(DEFAULT_FEE_BPS > 0 ? { feeBps: DEFAULT_FEE_BPS } : {}),
           });
           onClose();

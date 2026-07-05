@@ -132,10 +132,10 @@ export default function App() {
     });
   }, []);
 
-  /** replace a bet record in place (close/settle from the portfolio page) */
-  const updateBet = useCallback((bet: Bet) => {
+  /** swap a bet for its close/settle result — 1 record (full) or 2 (partial) */
+  const replaceBet = useCallback((id: string, replacements: Bet[]) => {
     setBets((prev) => {
-      const next = prev.map((b) => (b.id === bet.id ? bet : b));
+      const next = prev.flatMap((b) => (b.id === id ? replacements : [b]));
       if (!DEMO) persistBets(next);
       return next;
     });
@@ -313,52 +313,27 @@ export default function App() {
             <a href="#/portfolio" className={route.page === "portfolio" ? "on" : ""}>Portfolio</a>
           </nav>
         </div>
-        <div className="tiles head-tiles">
+        <div className="tiles">
           <div className="tile">
             <div className="tile-label">Events</div>
             <div className="tile-value">{stats.nEvents}</div>
-          </div>
-          <div className="tile">
-            <div className="tile-label">Markets</div>
-            <div className="tile-value">{stats.nMarkets}</div>
-          </div>
-          <div className="tile">
-            <div className="tile-label">Deadline ladders</div>
-            <div className="tile-value accent">{stats.nHorizon}</div>
           </div>
           <div className="tile" title="Volume traded in the last 24 hours across all tracked markets">
             <div className="tile-label">24h volume</div>
             <div className="tile-value">{fmtVolume(stats.totalVolume24h)}</div>
           </div>
-          {stats.spikeEventId && (
-            <a
-              className="tile tile-link"
-              href={`#/event/${stats.spikeEventId}`}
-              title={`${stats.spikeEvent} — largest gap between a deadline ladder's highest and lowest implied daily odds. Click to open.`}
-            >
-              <div className="tile-label">Sharpest spike</div>
-              <div className="tile-value spike">
-                {stats.spikeRatio.toFixed(0)}×
-                <span className="tile-go"> ↗</span>
-              </div>
-              <div className="tile-sub">{stats.spikeEvent}</div>
-            </a>
-          )}
           <button
-            className="tile tile-refresh"
+            className="refresh-btn"
             onClick={forceRefresh}
             disabled={refreshing}
             title="Fetch live prices for every tracked market right now (auto-refresh covers watchlist, bets, and open pages every 60s)"
           >
-            <div className="tile-label">Prices</div>
-            <div className={`tile-value refresh-icon${refreshing ? " spinning" : ""}`}>⟳</div>
-            <div className="tile-sub">
-              {refreshing
-                ? "updating…"
-                : lastLiveAt
-                  ? `live · ${Math.max(0, Math.round((Date.now() - lastLiveAt) / 1000))}s ago`
-                  : "refresh now"}
-            </div>
+            <span className={`refresh-icon${refreshing ? " spinning" : ""}`}>⟳</span>
+            {refreshing
+              ? "updating…"
+              : lastLiveAt
+                ? `${Math.max(0, Math.round((Date.now() - lastLiveAt) / 1000))}s ago`
+                : "refresh"}
           </button>
         </div>
       </header>
@@ -378,7 +353,7 @@ export default function App() {
           bets={bets}
           marketIndex={marketIndex}
           live={live}
-          onUpdateBet={updateBet}
+          onReplaceBet={replaceBet}
           onRemoveBet={removeBet}
           onImport={importBetList}
         />
