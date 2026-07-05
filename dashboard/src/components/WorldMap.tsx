@@ -274,6 +274,34 @@ export default function WorldMap({
     return () => window.clearTimeout(id);
   }, [focusPoint]);
 
+  // ── pan/zoom to a selected geography (catalog region list or bubble click) ──
+  useEffect(() => {
+    if (!selectedRegion || selectedRegion === "__global__") return;
+    let info: { lat: number; lon: number } | undefined;
+    let targetK = 1.6; // region: gentle zoom, stays below the subregion split
+    if (selectedRegion.startsWith("country:")) {
+      info = countries.find((c) => c.id === selectedRegion.slice(8));
+      targetK = K_COUNTRY + 0.2;
+    } else if (selectedRegion.startsWith("sub:")) {
+      info = subregions.find((s) => s.id === selectedRegion.slice(4));
+      targetK = K_SUB + 0.2;
+    } else if (selectedRegion.startsWith("rem:")) {
+      info = regions.find((r) => r.id === selectedRegion.slice(4));
+    } else {
+      info = regions.find((r) => r.id === selectedRegion);
+    }
+    if (!info) return;
+    const pt = projection([info.lon, info.lat]);
+    if (!pt) return;
+    setAnimate(true);
+    setT((prev) => {
+      const k = Math.max(prev.k, targetK); // never zoom OUT from where the user is
+      return clampTransform({ k, tx: W / 2 - pt[0] * k, ty: H / 2 - pt[1] * k });
+    });
+    const id = window.setTimeout(() => setAnimate(false), 550);
+    return () => window.clearTimeout(id);
+  }, [selectedRegion, regions, subregions, countries, projection]);
+
   // ── zoom & pan handlers ─────────────────────────────────────────────────────
   const toLocal = (e: { clientX: number; clientY: number }) => {
     const rect = svgRef.current!.getBoundingClientRect();
@@ -443,27 +471,27 @@ export default function WorldMap({
             className={`chip${filter === "all" ? " chip-active" : ""}`}
             onClick={() => onFilterChange("all")}
           >
-            all markets
+            All markets
           </button>
-          {globalCount > 0 && (
-            <button
-              className={`chip${selectedRegion === "__global__" ? " chip-active" : ""}`}
-              title="Events with no mapped region — not shown on the map"
-              onClick={() =>
-                onSelectRegion(selectedRegion === "__global__" ? null : "__global__")}
-            >
-              ◌ global ({globalCount})
-            </button>
-          )}
           {(["watch", "bets"] as MapFilter[]).map((f) => (
             <button
               key={f}
               className={`chip${filter === f ? " chip-active" : ""}`}
               onClick={() => onFilterChange(f)}
             >
-              {f === "watch" ? "★ watchlist" : "$ my bets"}
+              {f === "watch" ? "★ Watchlist" : "$ My bets"}
             </button>
           ))}
+          {/* always rendered so the chip row is identical in every scope */}
+          <button
+            className={`chip${selectedRegion === "__global__" ? " chip-active" : ""}`}
+            title="Events with no mapped region — not shown on the map"
+            disabled={globalCount === 0}
+            onClick={() =>
+              onSelectRegion(selectedRegion === "__global__" ? null : "__global__")}
+          >
+            ◌ Global ({globalCount})
+          </button>
           {selectedRegion && selectedRegion !== "__global__" && (
             <button className="chip chip-active" onClick={() => onSelectRegion(null)}>
               ✕ {selectedRegion.startsWith("country:")
@@ -483,7 +511,7 @@ export default function WorldMap({
             <span className="disputed-key">– –</span> disputed borders
           </span>
           {t.k > 1.01 && (
-            <button className="chip" onClick={resetView}>⌂ reset</button>
+            <button className="chip" onClick={resetView}>⌂ Reset</button>
           )}
         </div>
       </div>

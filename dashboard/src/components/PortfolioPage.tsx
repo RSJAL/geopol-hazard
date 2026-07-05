@@ -397,10 +397,10 @@ export default function PortfolioPage({
       <div className="detail-panel pf-panel">
         <div className="chart-head">
           <span className="panel-title">Portfolio value over time</span>
-          <div className="toggle">
+          <div className="toggle iv-toggle">
             {(["1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
               <button key={iv} className={range === iv ? "on" : ""} onClick={() => setRange(iv)}>
-                {iv}
+                {iv === "max" ? "Max" : iv.toUpperCase()}
               </button>
             ))}
           </div>

@@ -326,13 +326,13 @@ export default function BrowsePage({ catalog, live, watchlist, bets, onToggleWat
           <div className="bw-tools">
             <div className="toggle">
               <button className={scope === "watch" ? "on" : ""} onClick={() => setScope("watch")}>
-                ★ watchlist
+                ★ Watchlist
               </button>
               <button className={scope === "bets" ? "on" : ""} onClick={() => setScope("bets")}>
-                $ bets{groupBets.size ? ` (${groupBets.size})` : ""}
+                $ Bets{groupBets.size ? ` (${groupBets.size})` : ""}
               </button>
               <button className={scope === "all" ? "on" : ""} onClick={() => setScope("all")}>
-                all
+                All
               </button>
             </div>
             <input

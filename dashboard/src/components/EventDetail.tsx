@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Bet, CatalogEvent, CatalogMarket, LivePriceMap, PricePoint } from "../lib/types";
-import { buildLadder, fmtVolume, liveYes, deadlineLabel, type LadderRow } from "../lib/analytics";
+import { buildLadder, fmtVolume, liveYes, deadlineLabel } from "../lib/analytics";
 import { betPnl, isOpen, newBetId } from "../lib/bets";
 import { DEFAULT_FEE_BPS, polymarketFee } from "../lib/fees";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
 
 const LINE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a", "#ef5350", "#ab47bc", "#26c6da"];
+
+const INTERVAL_LABEL: Record<HistoryInterval, string> = {
+  "1d": "1D", "1w": "1W", "1m": "1M", max: "Max",
+};
 
 interface Props {
   event: CatalogEvent;
@@ -19,26 +23,36 @@ interface Props {
 
 type RateMode = "daily" | "total";
 
-function BetForm({
-  event, market, label, live, onAddBet, onClose,
-}: {
-  event: CatalogEvent;
+interface BetOption {
   market: CatalogMarket;
   label: string;
+}
+
+/** One bet form per event (V0.151): the market — candidate or deadline — is
+ *  picked in a dropdown instead of per-row $ buttons. */
+function BetForm({
+  event, options, initialId, live, onAddBet, onClose,
+}: {
+  event: CatalogEvent;
+  options: BetOption[];
+  initialId: string;
   live: LivePriceMap;
   onAddBet: (bet: Bet) => void;
   onClose: () => void;
 }) {
+  const [marketId, setMarketId] = useState(initialId);
+  const opt = options.find((o) => o.market.id === marketId) ?? options[0];
+  const market = opt.market;
   const yes = liveYes(market, live);
   const [side, setSide] = useState<"YES" | "NO">("YES");
   const [shares, setShares] = useState("100");
   const [price, setPrice] = useState(yes.toFixed(1));
 
-  // reset only when the SIDE flips — a 60s live-price tick must not clobber
-  // an entry price the user is typing
+  // reset only when the SIDE or MARKET changes — a 60s live-price tick must
+  // not clobber an entry price the user is typing
   useEffect(() => {
     setPrice((side === "YES" ? yes : 100 - yes).toFixed(1));
-  }, [side]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [side, marketId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nShares = parseFloat(shares) || 0;
   const nPrice = parseFloat(price) || 0;
@@ -47,7 +61,20 @@ function BetForm({
 
   return (
     <div className="bet-form" onClick={(e) => e.stopPropagation()}>
-      <span className="bet-form-label">{label}</span>
+      <span className="bet-form-label">bet on</span>
+      {options.length > 1 ? (
+        <select
+          className="bet-market"
+          value={opt.market.id}
+          onChange={(e) => setMarketId(e.target.value)}
+        >
+          {options.map((o) => (
+            <option key={o.market.id} value={o.market.id}>{o.label}</option>
+          ))}
+        </select>
+      ) : (
+        <span className="bet-form-label"><b>{opt.label}</b></span>
+      )}
       <select value={side} onChange={(e) => setSide(e.target.value as "YES" | "NO")}>
         <option value="YES">YES</option>
         <option value="NO">NO</option>
@@ -73,7 +100,7 @@ function BetForm({
             id: newBetId(),
             eventId: event.id.startsWith("group:") ? "" : event.id,
             marketId: market.id,
-            label: `${event.title.slice(0, 40)} — ${label}`,
+            label: `${event.title.slice(0, 40)} — ${opt.label}`,
             side,
             shares: nShares,
             entryPrice: nPrice,
@@ -90,83 +117,14 @@ function BetForm({
   );
 }
 
-/** PMF bar chart: per-day probability mass at each deadline, implied ↔ marginal. */
-function HazardPmf({ ladder }: { ladder: LadderRow[] }) {
-  const [mode, setMode] = useState<"implied" | "marginal">("implied");
-  const vals = ladder.map((r) => (mode === "implied" ? r.implDaily : r.margDaily));
-  // center of probability mass for the CURRENT mode gets the hot color
-  const peakIdx = vals.reduce((bi, val, vi) => (val > vals[bi] ? vi : bi), 0);
-
-  const CW = 640, CH = 170, padL = 46, padR = 8, padT = 10, padB = 26;
-  const maxV = Math.max(...vals, 1e-9);
-  const minV = Math.min(...vals, 0); // negative marginals (NEG) drop below zero
-  const span = maxV - minV || 1e-9;
-  const y = (v: number) => padT + ((maxV - v) / span) * (CH - padT - padB);
-  const zero = y(0);
-  const slot = (CW - padL - padR) / ladder.length;
-  const bw = Math.min(56, slot - 10);
-
-  const nTicks = 4;
-  const ticks = Array.from({ length: nTicks + 1 }, (_, i) => {
-    const v = minV + (span / nTicks) * i;
-    return { y: y(v), label: `${v.toFixed(3)}%` };
-  });
-
-  return (
-    <div className="pmf-chart">
-      <div className="chart-head">
-        <span className="panel-title">Hazard rate PMF <span className="muted">(probability mass per day)</span></span>
-        <div className="toggle">
-          <button className={mode === "implied" ? "on" : ""} onClick={() => setMode("implied")}>
-            daily odds
-          </button>
-          <button className={mode === "marginal" ? "on" : ""} onClick={() => setMode("marginal")}>
-            period odds/day
-          </button>
-        </div>
-      </div>
-      <svg viewBox={`0 0 ${CW} ${CH}`}>
-        {ticks.map((t, i) => (
-          <g key={i}>
-            <line x1={padL} x2={CW - padR} y1={t.y} y2={t.y} className="grid-line" />
-            <text x={padL - 5} y={t.y + 3} className="tick tick-y">{t.label}</text>
-          </g>
-        ))}
-        {minV < 0 && (
-          <line x1={padL} x2={CW - padR} y1={zero} y2={zero} className="zero-line" />
-        )}
-        {ladder.map((r, i) => {
-          const v = vals[i];
-          const x = padL + slot * (i + 0.5);
-          const top = Math.min(y(v), zero);
-          const h = Math.abs(y(v) - zero);
-          const cls =
-            v < 0 ? "pmf-bar-neg" : i === peakIdx && v > 0 ? "pmf-bar-peak" : "pmf-bar";
-          return (
-            <g key={r.endDate}>
-              <title>
-                {`${r.label}: ${v.toFixed(3)}%/day` +
-                  (mode === "marginal"
-                    ? ` over ${r.windowDays}-day window (${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}% mass)`
-                    : ` (${r.yes.toFixed(1)}% compounded over ${r.days}d)`)}
-              </title>
-              <rect x={x - bw / 2} y={top} width={bw} height={Math.max(1.5, h)} className={cls} />
-              <text x={x} y={CH - 3} className="tick tick-x">{r.label.replace(/^By /, "")}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
 export default function EventDetail({ event, live, onAddBet, bets, showFullViewLink }: Props) {
   const [mode, setMode] = useState<RateMode>("total"); // total odds are the site default
   const [interval, setInterval_] = useState<HistoryInterval>("1m");
   const [series, setSeries] = useState<Series[] | null>(null);
-  const [betMarketId, setBetMarketId] = useState<string | null>(null);
+  /** market id to preselect in the single bet form; null = form closed */
+  const [betInit, setBetInit] = useState<string | null>(null);
 
-  useEffect(() => setBetMarketId(null), [event.id]);
+  useEffect(() => setBetInit(null), [event.id]);
 
   const ladder = useMemo(
     () => (event.type === "horizon" ? buildLadder(event, live) : []),
@@ -174,10 +132,12 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
   );
 
   const chartMarkets = useMemo(() => {
+    // categorical: lead candidates by snapshot price (stable across live
+    // ticks) — volume order surfaced dead-but-once-traded outcomes instead
     const ms =
       event.type === "horizon"
         ? ladder.map((r) => r.market)
-        : [...event.markets].sort((a, b) => b.volume - a.volume);
+        : [...event.markets].sort((a, b) => b.yes - a.yes);
     return ms.filter((m) => m.yesTokenId).slice(0, 6);
   }, [event, ladder]);
 
@@ -233,18 +193,23 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
       );
     });
 
-  const betBtn = (m: CatalogMarket) => (
-    <button
-      className="bet-btn"
-      title="Log a bet on this market"
-      onClick={(e) => {
-        e.stopPropagation();
-        setBetMarketId(betMarketId === m.id ? null : m.id);
-      }}
-    >
-      $
-    </button>
-  );
+  /** one dropdown-equipped form per event: deadlines / candidates / the market */
+  const betOptions = useMemo((): BetOption[] => {
+    if (event.type === "horizon")
+      return ladder.map((r) => ({ market: r.market, label: r.label }));
+    if (event.type === "categorical")
+      return [...event.markets]
+        .sort((a, b) => b.yes - a.yes)
+        .slice(0, 12)
+        .map((m) => ({ market: m, label: (m.groupItemTitle || m.question).slice(0, 40) }));
+    return event.markets.map((m) => ({ market: m, label: deadlineLabel(m.endDate) }));
+  }, [event, ladder]);
+
+  const toggleBetForm = (marketId?: string) =>
+    setBetInit((prev) =>
+      prev !== null && (marketId === undefined || prev === marketId)
+        ? null
+        : marketId ?? betOptions[0]?.market.id ?? null);
 
   return (
     <div className="detail-panel">
@@ -274,103 +239,94 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
         </div>
         {event.type === "horizon" && (
           <div className="toggle">
-            <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>total</button>
-            <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>/day</button>
+            <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>Total</button>
+            <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>Day</button>
           </div>
         )}
       </div>
 
       {event.type === "horizon" && (
-        <table className="ladder">
-          <thead>
-            <tr>
-              <th>Deadline</th>
-              <th className="num">YES</th>
-              <th className="num">{mode === "daily" ? "Daily odds" : "Total odds"}</th>
-              <th className="num" title="Odds added by this window vs the preceding deadline">
-                {mode === "daily" ? "Period /day" : "Period odds"}
-              </th>
-              <th className="num">Days</th>
-              <th className="viz"></th>
-              <th className="flags"></th>
-              <th className="bet-th"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {ladder.map((r, i) => {
-              const barVal = mode === "daily" ? r.implDaily / maxImpl : r.yes / maxYes;
-              const implTxt = mode === "daily" ? `${r.implDaily.toFixed(3)}%` : `${r.yes.toFixed(1)}%`;
-              const margTxt =
-                i === 0 ? "—"
-                : mode === "daily" ? `${r.margDaily.toFixed(3)}%`
-                : `${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}%`;
-              const margPeak = i > 0 && peakMarg > 0 && Math.abs(r.margDaily - peakMarg) < 1e-9;
-              return [
-                <tr key={r.endDate}>
-                  <td>{r.label}</td>
-                  <td className="num">{r.yes.toFixed(1)}%</td>
-                  <td className={`num${r.isPeak ? " peak" : r.isInversion ? " inv" : ""}`}>{implTxt}</td>
-                  <td className={`num${margPeak ? " peak" : r.isCheap ? " cheap" : ""}`}>{margTxt}</td>
-                  <td className="num muted">{r.days}d</td>
-                  <td className="viz">
-                    <div
-                      className={`bar${r.isPeak ? " bar-peak" : r.isInversion ? " bar-inv" : ""}`}
-                      style={{ width: `${Math.max(2, barVal * 100)}%` }}
-                    />
-                  </td>
-                  <td className="flags">
-                    {r.isPeak && <span className="badge b-peak">PEAK</span>}
-                    {r.isInversion && <span className="badge b-inv">INV</span>}
-                    {r.isCheap && <span className="badge b-cheap">CHEAP</span>}
-                    {r.isNegativeMarginal && <span className="badge b-neg" title="Longer deadline priced below shorter — inconsistent pricing">NEG</span>}
-                  </td>
-                  <td className="bet-cell">{posChips(r.market)}{betBtn(r.market)}</td>
-                </tr>,
-                betMarketId === r.market.id && (
-                  <tr key={`${r.endDate}-bet`} className="bet-row">
-                    <td colSpan={8}>
-                      <BetForm
-                        event={event} market={r.market} label={r.label} live={live}
-                        onAddBet={onAddBet} onClose={() => setBetMarketId(null)}
+        <>
+          <table className="ladder">
+            <thead>
+              <tr>
+                <th>Deadline</th>
+                <th className="num">YES</th>
+                <th className="num">{mode === "daily" ? "Daily odds" : "Total odds"}</th>
+                <th className="num" title="Odds added by this window vs the preceding deadline">
+                  {mode === "daily" ? "Period /day" : "Period odds"}
+                </th>
+                <th className="num">Days</th>
+                <th className="viz"></th>
+                <th className="flags"></th>
+                <th className="bet-th"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {ladder.map((r, i) => {
+                const barVal = mode === "daily" ? r.implDaily / maxImpl : r.yes / maxYes;
+                const implTxt = mode === "daily" ? `${r.implDaily.toFixed(3)}%` : `${r.yes.toFixed(1)}%`;
+                const margTxt =
+                  i === 0 ? "—"
+                  : mode === "daily" ? `${r.margDaily.toFixed(3)}%`
+                  : `${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}%`;
+                const margPeak = i > 0 && peakMarg > 0 && Math.abs(r.margDaily - peakMarg) < 1e-9;
+                return (
+                  <tr key={r.endDate}>
+                    <td>{r.label}</td>
+                    <td className="num">{r.yes.toFixed(1)}%</td>
+                    <td className={`num${r.isPeak ? " peak" : r.isInversion ? " inv" : ""}`}>{implTxt}</td>
+                    <td className={`num${margPeak ? " peak" : r.isCheap ? " cheap" : ""}`}>{margTxt}</td>
+                    <td className="num muted">{r.days}d</td>
+                    <td className="viz">
+                      <div
+                        className={`bar${r.isPeak ? " bar-peak" : r.isInversion ? " bar-inv" : ""}`}
+                        style={{ width: `${Math.max(2, barVal * 100)}%` }}
                       />
                     </td>
+                    <td className="flags">
+                      {r.isPeak && <span className="badge b-peak">PEAK</span>}
+                      {r.isInversion && <span className="badge b-inv">INV</span>}
+                      {r.isCheap && <span className="badge b-cheap">CHEAP</span>}
+                      {r.isNegativeMarginal && <span className="badge b-neg" title="Longer deadline priced below shorter — inconsistent pricing">NEG</span>}
+                    </td>
+                    <td className="bet-cell">{posChips(r.market)}</td>
                   </tr>
-                ),
-              ];
-            })}
-          </tbody>
-        </table>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="bet-launch">
+            <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
+          </div>
+        </>
       )}
 
       {event.type === "categorical" && (
-        <div className="buckets">
-          {[...event.markets]
-            .sort((a, b) => liveYes(b, live) - liveYes(a, live))
-            .slice(0, 12)
-            .map((m) => {
-              const yes = liveYes(m, live);
-              const label = m.groupItemTitle || m.question;
-              return (
-                <div key={m.id}>
-                  <div className="bucket-row">
+        <>
+          <div className="buckets">
+            {[...event.markets]
+              .sort((a, b) => liveYes(b, live) - liveYes(a, live))
+              .slice(0, 12)
+              .map((m) => {
+                const yes = liveYes(m, live);
+                const label = m.groupItemTitle || m.question;
+                return (
+                  <div key={m.id} className="bucket-row">
                     <span className="bucket-label">{label}</span>
                     <div className="bucket-bar-wrap">
                       <div className="bucket-bar" style={{ width: `${Math.max(1, yes)}%` }} />
                     </div>
                     <span className="bucket-val">{yes.toFixed(1)}%</span>
                     {posChips(m)}
-                    {betBtn(m)}
                   </div>
-                  {betMarketId === m.id && (
-                    <BetForm
-                      event={event} market={m} label={label.slice(0, 30)} live={live}
-                      onAddBet={onAddBet} onClose={() => setBetMarketId(null)}
-                    />
-                  )}
-                </div>
-              );
-            })}
-        </div>
+                );
+              })}
+          </div>
+          <div className="bet-launch">
+            <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
+          </div>
+        </>
       )}
 
       {event.type === "binary" && (
@@ -380,37 +336,56 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
             const chg = (live.get(m.id)?.change24h ?? m.change24h ?? 0) * 100;
             const label = deadlineLabel(m.endDate);
             return (
-              <div key={m.id}>
-                <div className="binary-row">
+              <div key={m.id} className="binary-row">
+                <div className="binary-main">
                   <span className="binary-yes">{yes.toFixed(1)}%</span>
-                  <span className="muted"> YES · {label}</span>
-                  {chg !== 0 && (
-                    <span className={chg > 0 ? "up" : "down"}>
-                      {" "}{chg > 0 ? "▲" : "▼"}{Math.abs(chg).toFixed(1)} (24h)
-                    </span>
-                  )}
-                  <span className="muted"> · spread {(m.spread ?? 0).toFixed(3)} · liq {fmtVolume(m.liquidity)}</span>
-                  {posChips(m)}
-                  {betBtn(m)}
+                  <span className="binary-side">YES · {label}</span>
                 </div>
-                {betMarketId === m.id && (
-                  <BetForm
-                    event={event} market={m} label={label} live={live}
-                    onAddBet={onAddBet} onClose={() => setBetMarketId(null)}
-                  />
-                )}
+                <div className="binary-stats">
+                  {chg !== 0 && (
+                    <div className="bstat">
+                      <span className="bstat-label">24h</span>
+                      <b className={chg > 0 ? "up" : "down"}>
+                        {chg > 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(1)}
+                      </b>
+                    </div>
+                  )}
+                  <div className="bstat">
+                    <span className="bstat-label">Spread</span>
+                    <b>{(m.spread ?? 0).toFixed(3)}</b>
+                  </div>
+                  <div className="bstat">
+                    <span className="bstat-label">Vol</span>
+                    <b>{fmtVolume(m.volume)}</b>
+                  </div>
+                </div>
+                <div className="binary-actions">
+                  {posChips(m)}
+                  <button className="bet-btn" onClick={() => toggleBetForm(m.id)}>$ Record bet</button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
 
+      {betInit !== null && betOptions.length > 0 && (
+        <BetForm
+          event={event}
+          options={betOptions}
+          initialId={betInit}
+          live={live}
+          onAddBet={onAddBet}
+          onClose={() => setBetInit(null)}
+        />
+      )}
+
       <div className="chart-head">
-        <span className="panel-title">Price paths</span>
-        <div className="toggle">
+        <span className="panel-title">Price history</span>
+        <div className="toggle iv-toggle">
           {(["1d", "1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
             <button key={iv} className={interval === iv ? "on" : ""} onClick={() => setInterval_(iv)}>
-              {iv}
+              {INTERVAL_LABEL[iv]}
             </button>
           ))}
         </div>
@@ -418,9 +393,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
       {series === null
         ? <div className="chart-empty">Loading price history…</div>
         : <PriceChart series={series} />}
-
-      {/* full event page only — the map-side panel stays compact */}
-      {!showFullViewLink && ladder.length >= 2 && <HazardPmf ladder={ladder} />}
     </div>
   );
 }

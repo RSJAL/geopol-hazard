@@ -20,9 +20,9 @@ interface Props {
 
 type SortKey = "volume" | "volume24h" | "move" | "endDate";
 
+// categorical events show no type token (V0.151: "buckets" jargon removed)
 const TYPE_LABEL: Record<string, string> = {
   horizon: "⏱ ladder",
-  categorical: "▤ buckets",
   binary: "◦ binary",
 };
 
@@ -257,7 +257,9 @@ export default function CatalogPanel({
               <div className="row-main">
                 <div className="row-title">{ev.title}</div>
                 <div className="row-meta">
-                  {ev.category} · {TYPE_LABEL[ev.type]} · {fmtVolume(ev.volume)}
+                  {ev.category}
+                  {TYPE_LABEL[ev.type] && ` · ${TYPE_LABEL[ev.type]}`}
+                  {` · ${fmtVolume(ev.volume)}`}
                   {ev.type === "horizon" && ` · ${new Set(ev.markets.map((m) => m.endDate)).size} deadlines`}
                 </div>
               </div>
