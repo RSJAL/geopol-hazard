@@ -1,16 +1,27 @@
 /* ── Palette ─────────────────────────────────────────────────────────────── */
+/* V0.15: panels/tiles use the Browse card colours; interactive/selection
+   states are green (--sel); blue (--accent) is reserved for data — chart
+   lines, map bubbles, price values. */
 :root {
   --bg: #0f1117;
-  --panel: #1a1d2e;
-  --panel-2: #14172288;
-  --grid: #2a2d3e;
+  --panel: #151a24;
+  --panel-2: #1d243288;
+  --grid: #252c3c;
   --head: #0d0f18;
   --accent: #4fc3f7;
+  --sel: #00c896;
+  --sel-dim: #0d2f26;
   --spike: #ff6b6b;
   --inv: #ffa726;
   --cheap: #66bb6a;
   --text: #e0e0e0;
   --muted: #888;
+  --bw-card: var(--panel);
+  --bw-border: var(--grid);
+  --bw-green: var(--sel);
+  --bw-green-dim: var(--sel-dim);
+  --bw-red: #ff5c6c;
+  --bw-red-dim: #34161d;
 }
 
 * { box-sizing: border-box; }
@@ -94,7 +105,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--grid); border-radius: 6px; padding: 7px 10px;
   font-size: 0.8rem; outline: none; margin-bottom: 6px;
 }
-.search:focus { border-color: var(--accent); }
+.search:focus { border-color: var(--sel); }
 
 .filter-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
 .filter-row select {
@@ -116,7 +127,7 @@ a:hover { text-decoration: underline; }
 }
 .catalog-row:hover, .watch-row:hover { background: var(--panel-2); }
 .catalog-row.selected, .watch-row.selected {
-  background: var(--panel-2); border-color: var(--accent);
+  background: var(--panel-2); border-color: var(--sel);
 }
 
 .row-main { flex: 1; min-width: 0; }
@@ -171,7 +182,7 @@ a:hover { text-decoration: underline; }
   background: var(--head); border: 1px solid var(--grid); color: var(--muted);
   border-radius: 12px; font-size: 0.68rem; padding: 3px 10px; cursor: pointer;
 }
-.chip-active { border-color: var(--accent); color: var(--accent); }
+.chip-active { border-color: var(--sel); color: var(--sel); }
 
 /* ── Event detail ────────────────────────────────────────────────────────── */
 .detail-placeholder {
@@ -189,7 +200,7 @@ a:hover { text-decoration: underline; }
   background: var(--head); color: var(--muted); border: none;
   padding: 4px 10px; font-size: 0.7rem; cursor: pointer;
 }
-.toggle button.on { background: var(--accent); color: var(--head); font-weight: 700; }
+.toggle button.on { background: var(--sel); color: var(--head); font-weight: 700; }
 
 /* ladder table */
 .ladder { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
@@ -266,7 +277,7 @@ a:hover { text-decoration: underline; }
   color: var(--text); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem;
   cursor: pointer;
 }
-.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:hover:not(:disabled) { border-color: var(--sel); }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .watch-list { overflow-y: auto; flex: 1; }
 
@@ -283,7 +294,7 @@ a:hover { text-decoration: underline; }
   color: var(--muted); border: 1px solid transparent;
 }
 .nav a:hover { text-decoration: none; color: var(--text); }
-.nav a.on { color: var(--accent); border-color: var(--grid); background: var(--head); }
+.nav a.on { color: var(--sel); border-color: var(--grid); background: var(--head); font-weight: 600; }
 
 /* ── Map v2 ──────────────────────────────────────────────────────────────── */
 .world-map { touch-action: none; cursor: grab; }
@@ -294,7 +305,7 @@ a:hover { text-decoration: underline; }
 }
 .disputed-key { color: var(--inv); letter-spacing: -1px; }
 .focus-halo {
-  fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.9;
+  fill: none; stroke: var(--sel); stroke-width: 2; opacity: 0.9;
   animation: halo 1.6s ease-out infinite;
   pointer-events: none; /* decoration only — clicks reach bubbles/background */
 }
@@ -366,7 +377,7 @@ a:hover { text-decoration: underline; }
 .bet-form-close {
   flex: 0 0 auto; width: auto; padding: 4px 9px; color: var(--muted);
 }
-.btn-primary { background: var(--accent); color: var(--head); font-weight: 700; flex: initial; }
+.btn-primary { background: var(--sel); color: var(--head); font-weight: 700; flex: initial; }
 .bet-row td { border-bottom: none !important; padding: 0 4px !important; }
 
 /* bet cards (rail) */
@@ -375,7 +386,7 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--grid); border-left-width: 3px; border-radius: 8px;
   padding: 9px 10px; margin-bottom: 8px; cursor: pointer; font-size: 0.74rem;
 }
-.bet-card:hover { border-color: var(--accent); border-left-color: var(--accent); }
+.bet-card:hover { border-color: var(--sel); border-left-color: var(--sel); }
 .bet-card-up { border-left-color: var(--cheap); }
 .bet-card-down { border-left-color: var(--spike); }
 .bet-card-head { display: flex; align-items: flex-start; gap: 6px; }
@@ -463,80 +474,25 @@ a:hover { text-decoration: underline; }
 .pmf-bar-neg { fill: var(--spike); opacity: 0.55; }
 .zero-line { stroke: var(--muted); stroke-width: 0.8; stroke-dasharray: 4 3; }
 
-/* ── Markets page ────────────────────────────────────────────────────────── */
-.markets-page { min-height: 60vh; }
-.markets-head {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 10px; padding: 0 2px;
+/* ── Catalog panel: V0.15 two-state (regions list → scoped market list) ──── */
+.cat-side { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; flex: 1; }
+.cat-hint {
+  font-size: 0.66rem; color: var(--muted); padding: 10px 4px 2px;
+  border-top: 1px solid var(--grid); margin-top: 8px;
 }
-.markets-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
-  gap: 12px;
+.cat-scope-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cat-back {
+  background: var(--head); border: 1px solid var(--grid); color: var(--muted);
+  border-radius: 6px; padding: 3px 9px; font-size: 0.7rem; cursor: pointer;
+  flex-shrink: 0; white-space: nowrap;
 }
-.group-card {
-  background: var(--panel); border: 1px solid var(--grid); border-radius: 10px;
-  padding: 12px; cursor: pointer;
+.cat-back:hover { color: var(--sel); border-color: var(--sel); }
+.cat-scope-name {
+  flex: 1; font-weight: 700; font-size: 0.85rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.group-card:hover { border-color: var(--accent); }
-.markets-tools { display: flex; align-items: center; gap: 12px; }
-.watch-add { width: 300px; margin-bottom: 0 !important; }
-
-/* add-to-watchlist combobox */
-.combo { position: relative; }
-.combo-list {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
-  background: var(--panel); border: 1px solid var(--accent); border-radius: 8px;
-  box-shadow: 0 8px 24px #00000088; padding: 4px;
-  max-height: 340px; overflow-y: auto;
-}
-.combo-item {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-  padding: 7px 9px; border-radius: 5px; cursor: pointer; font-size: 0.76rem;
-}
-.combo-item.hl { background: var(--panel-2); }
-.combo-title {
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-}
-.combo-meta { color: var(--muted); font-size: 0.66rem; white-space: nowrap; }
-.group-head { margin-bottom: 6px; }
-.group-title-wrap { display: flex; align-items: center; gap: 6px; }
-.group-title { font-weight: 700; font-size: 0.88rem; flex: 1; }
-.group-meta { font-size: 0.66rem; color: var(--muted); margin: 2px 0 0 26px; }
-.group-tabs { margin: 6px 0 8px; flex-wrap: wrap; }
-.ladder.mini td, .ladder.mini th { padding: 4px 6px; font-size: 0.72rem; }
-
-/* ── Market comparison view ──────────────────────────────────────────────── */
-.cmp-btn {
-  background: none; border: 1px solid var(--grid); color: var(--muted);
-  border-radius: 4px; font-size: 0.72rem; padding: 0 5px; cursor: pointer;
-  line-height: 1.5; flex-shrink: 0;
-}
-.cmp-btn:hover { border-color: var(--accent); color: var(--accent); }
-.cmp-btn.on { border-color: var(--accent); color: var(--accent); background: var(--head); }
-.compare-view {
-  background: var(--panel); border: 1px solid var(--accent); border-radius: 10px;
-  padding: 12px; margin-bottom: 12px;
-}
-.compare-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 12px; margin-top: 10px;
-}
-.compare-col {
-  background: var(--head); border: 1px solid var(--grid); border-radius: 8px;
-  padding: 10px 10px 4px;
-}
-.compare-col .group-meta { margin: 2px 0 6px 0; }
-.compare-col-head { display: flex; align-items: center; gap: 6px; }
-.compare-col-head .group-title { flex: 1; color: var(--text); }
-.compare-hint {
-  background: var(--panel); border: 1px dashed var(--grid); border-radius: 10px;
-  padding: 10px 14px; margin-bottom: 12px; font-size: 0.76rem; color: var(--muted);
-}
-.link-btn {
-  background: none; border: none; color: var(--accent); cursor: pointer;
-  font-size: inherit; padding: 0;
-}
-.link-btn:hover { text-decoration: underline; }
+.cat-scope-toggle { flex-shrink: 0; }
+.cat-scope-toggle button { padding: 4px 12px; }
 
 /* ── Event drill-down page ───────────────────────────────────────────────── */
 .event-page { min-height: 60vh; }
@@ -547,7 +503,7 @@ a:hover { text-decoration: underline; }
   color: var(--muted);
 }
 .back-link:hover {
-  color: var(--accent); border-color: var(--accent); text-decoration: none;
+  color: var(--sel); border-color: var(--sel); text-decoration: none;
 }
 .event-page-grid {
   display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
@@ -560,12 +516,6 @@ a:hover { text-decoration: underline; }
 
 /* ── Browse view (Polymarket structure × Kalshi skin) ────────────────────── */
 .browse-page {
-  --bw-card: #151a24;
-  --bw-border: #252c3c;
-  --bw-green: #00c896;
-  --bw-green-dim: #0d2f26;
-  --bw-red: #ff5c6c;
-  --bw-red-dim: #34161d;
   display: grid; grid-template-columns: 200px minmax(0, 1fr);
   gap: 18px; align-items: start; min-height: 60vh;
 }
@@ -585,8 +535,8 @@ a:hover { text-decoration: underline; }
   background: none; border: none; border-radius: 8px; cursor: pointer;
   padding: 6px 10px; font-size: 0.78rem; color: var(--text); text-align: left;
 }
-.bw-side-item:hover { background: var(--bw-card); }
-.bw-side-item.on { color: var(--bw-green); background: var(--bw-card); font-weight: 600; }
+.bw-side-item:hover { background: var(--panel-2); }
+.bw-side-item.on { color: var(--sel); background: var(--sel-dim); font-weight: 600; }
 .bw-side-count { color: var(--muted); font-size: 0.68rem; }
 
 /* toolbar */
@@ -717,7 +667,7 @@ a:hover { text-decoration: underline; }
   background: var(--head); border: 1px solid var(--grid); border-radius: 6px;
   padding: 6px 9px; margin-bottom: 8px;
 }
-.pf-link:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+.pf-link:hover { color: var(--sel); border-color: var(--sel); text-decoration: none; }
 
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; }

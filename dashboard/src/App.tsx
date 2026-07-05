@@ -11,7 +11,6 @@ import CatalogPanel from "./components/CatalogPanel";
 import EventDetail from "./components/EventDetail";
 import WatchlistPanel from "./components/WatchlistPanel";
 import BetsPanel from "./components/BetsPanel";
-import MarketsPage from "./components/MarketsPage";
 import BrowsePage from "./components/BrowsePage";
 import PortfolioPage from "./components/PortfolioPage";
 import EventPage from "./components/EventPage";
@@ -53,15 +52,14 @@ function demoBets(catalog: Catalog): Bet[] {
 type Route =
   | { page: "map" }
   | { page: "markets" }
-  | { page: "browse" }
   | { page: "portfolio" }
   | { page: "event"; id: string };
 
 function parseRoute(): Route {
   const h = window.location.hash;
   if (h.startsWith("#/event/")) return { page: "event", id: decodeURIComponent(h.slice(8)) };
-  if (h.startsWith("#/markets")) return { page: "markets" };
-  if (h.startsWith("#/browse")) return { page: "browse" };
+  // #/browse is the pre-V0.15 hash for the same page — keep shared links alive
+  if (h.startsWith("#/markets") || h.startsWith("#/browse")) return { page: "markets" };
   if (h.startsWith("#/portfolio")) return { page: "portfolio" };
   return { page: "map" };
 }
@@ -293,7 +291,6 @@ export default function App() {
           <nav className="nav">
             <a href="#/" className={route.page === "map" ? "on" : ""}>Dashboard</a>
             <a href="#/markets" className={route.page === "markets" || route.page === "event" ? "on" : ""}>Markets</a>
-            <a href="#/browse" className={route.page === "browse" ? "on" : ""}>Browse</a>
             <a href="#/portfolio" className={route.page === "portfolio" ? "on" : ""}>Portfolio</a>
           </nav>
         </div>
@@ -326,17 +323,6 @@ export default function App() {
       </header>
 
       {route.page === "markets" && (
-        <MarketsPage
-          catalog={catalog}
-          live={live}
-          watchlist={watchSet}
-          bets={bets}
-          news={news}
-          onToggleWatch={toggleWatch}
-        />
-      )}
-
-      {route.page === "browse" && (
         <BrowsePage
           catalog={catalog}
           live={live}
@@ -380,6 +366,8 @@ export default function App() {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onToggleWatch={toggleWatch}
+            onRegionFilter={setRegionFilter}
+            onMapModeChange={setMapMode}
           />
           <div className="center-col">
             <WorldMap

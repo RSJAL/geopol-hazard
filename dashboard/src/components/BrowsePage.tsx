@@ -3,7 +3,7 @@ import type { Bet, Catalog, CatalogEvent, LivePriceMap } from "../lib/types";
 import { anchorCountry, buildLadder, deadlineLabel, fmtVolume, liveYes } from "../lib/analytics";
 import { isOpen } from "../lib/bets";
 import { buildGroups, type EventGroup } from "../lib/grouping";
-import { BetStrip } from "./MarketsPage";
+import { BetStrip } from "./BetStrip";
 
 interface Props {
   catalog: Catalog;
