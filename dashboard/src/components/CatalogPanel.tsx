@@ -20,12 +20,6 @@ interface Props {
 
 type SortKey = "volume" | "volume24h" | "move" | "endDate";
 
-// categorical events show no type token (V0.151: "buckets" jargon removed)
-const TYPE_LABEL: Record<string, string> = {
-  horizon: "⏱ ladder",
-  binary: "◦ binary",
-};
-
 /**
  * Two-state panel, Browse-style (V0.15): a region list with counts first;
  * picking a geographic scope (here or on the map) reveals the market list
@@ -308,9 +302,7 @@ export default function CatalogPanel({
                 </div>
                 <div className="row-meta">
                   {ev.category}
-                  {TYPE_LABEL[ev.type] && ` · ${TYPE_LABEL[ev.type]}`}
                   {` · ${fmtVolume(ev.volume)}`}
-                  {ev.type === "horizon" && ` · ${new Set(ev.markets.map((m) => m.endDate)).size} deadlines`}
                 </div>
               </div>
               <div className="row-price">
