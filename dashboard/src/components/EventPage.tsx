@@ -12,16 +12,27 @@ interface Props {
   news: NewsData | null;
   bets: Bet[];
   onAddBet: (bet: Bet) => void;
+  /** page the user navigated here from — the back button returns there */
+  from?: "map" | "markets" | "portfolio";
 }
 
 const TYPE_LABEL: Record<NewsSourceType, string> = {
   press: "Press", osint: "OSINT", breaking: "Breaking",
 };
 
-export default function EventPage({ id, catalog, live, news, bets, onAddBet }: Props) {
+type SentBucket = "hot" | "neutral" | "cool";
+// thresholds mirror NewsFeed's sentiment badge
+const sentBucket = (s: number): SentBucket =>
+  s <= -0.15 ? "hot" : s >= 0.15 ? "cool" : "neutral";
+const SENT_LABEL: Record<SentBucket, string> = {
+  hot: "🔥 Hot", neutral: "· Neutral", cool: "❄ Cool",
+};
+
+export default function EventPage({ id, catalog, live, news, bets, onAddBet, from }: Props) {
   const [newsDay, setNewsDay] = useState<string | null>(null);
   const [newsType, setNewsType] = useState<NewsSourceType | null>(null); // null = all
-  useEffect(() => { setNewsDay(null); setNewsType(null); }, [id]);
+  const [newsSent, setNewsSent] = useState<SentBucket | null>(null); // null = all
+  useEffect(() => { setNewsDay(null); setNewsType(null); setNewsSent(null); }, [id]);
   const { event, memberIds } = useMemo((): {
     event: CatalogEvent | null;
     memberIds: Set<string>;
@@ -50,10 +61,12 @@ export default function EventPage({ id, catalog, live, news, bets, onAddBet }: P
 
   const articles = useMemo(
     () =>
-      newsType
-        ? allArticles.filter((a) => (a.sourceType ?? "press") === newsType)
-        : allArticles,
-    [allArticles, newsType],
+      allArticles.filter(
+        (a) =>
+          (!newsType || (a.sourceType ?? "press") === newsType) &&
+          (!newsSent || sentBucket(a.sentiment) === newsSent),
+      ),
+    [allArticles, newsType, newsSent],
   );
 
   const dayArticles = useMemo(
@@ -73,12 +86,19 @@ export default function EventPage({ id, catalog, live, news, bets, onAddBet }: P
     );
   }
 
+  // return to wherever the user came from (V0.154) — default Markets
+  const backHref = from === "map" ? "#/" : from === "portfolio" ? "#/portfolio" : "#/markets";
+  const backLabel = from === "map" ? "← Dashboard" : from === "portfolio" ? "← Portfolio" : "← Markets";
+  const regionName = event.region
+    ? catalog.regions.find((r) => r.id === event.region)?.name ?? event.region
+    : null;
+
   return (
     <div className="event-page">
-      <a className="back-link" href="#/markets">← Markets</a>
+      <a className="back-link" href={backHref}>{backLabel}</a>
       <div className="event-page-grid">
         <div className="event-page-main">
-          <EventDetail event={event} live={live} onAddBet={onAddBet} bets={bets} />
+          <EventDetail event={event} live={live} onAddBet={onAddBet} bets={bets} regionName={regionName} />
         </div>
         <div className="event-page-side">
           <div className="detail-panel">
@@ -97,25 +117,37 @@ export default function EventPage({ id, catalog, live, news, bets, onAddBet }: P
                 )}
               </span>
             </div>
-            {typesPresent.size > 1 && (
+            {allArticles.length > 0 && (
               <div className="news-type-row">
                 <button
-                  className={`chip${newsType === null ? " chip-active" : ""}`}
-                  onClick={() => setNewsType(null)}
+                  className={`chip${newsType === null && newsSent === null ? " chip-active" : ""}`}
+                  onClick={() => { setNewsType(null); setNewsSent(null); }}
                 >
                   All
                 </button>
-                {(["press", "osint", "breaking"] as NewsSourceType[])
-                  .filter((t) => typesPresent.has(t))
-                  .map((t) => (
-                    <button
-                      key={t}
-                      className={`chip${newsType === t ? " chip-active" : ""}`}
-                      onClick={() => setNewsType(newsType === t ? null : t)}
-                    >
-                      {TYPE_LABEL[t]}
-                    </button>
-                  ))}
+                {typesPresent.size > 1 &&
+                  (["press", "osint", "breaking"] as NewsSourceType[])
+                    .filter((t) => typesPresent.has(t))
+                    .map((t) => (
+                      <button
+                        key={t}
+                        className={`chip${newsType === t ? " chip-active" : ""}`}
+                        onClick={() => setNewsType(newsType === t ? null : t)}
+                      >
+                        {TYPE_LABEL[t]}
+                      </button>
+                    ))}
+                <span className="chip-sep" />
+                {(["hot", "neutral", "cool"] as SentBucket[]).map((s) => (
+                  <button
+                    key={s}
+                    className={`chip${newsSent === s ? " chip-active" : ""}`}
+                    title="Filter by escalation sentiment"
+                    onClick={() => setNewsSent(newsSent === s ? null : s)}
+                  >
+                    {SENT_LABEL[s]}
+                  </button>
+                ))}
               </div>
             )}
             <SentimentChart articles={articles} selectedDay={newsDay} onSelectDay={setNewsDay} />

@@ -85,6 +85,21 @@ export default function CatalogPanel({
     return { regionCounts, globalCount };
   }, [base]);
 
+  /** country jump list (V0.154, mirrors Markets sidebar): same anchor rule as
+   *  the map bubbles, so picking one scopes the list AND pans the map */
+  const topCountries = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of base) {
+      const cid = anchorCountry(e, regionOfCountry);
+      if (cid) counts.set(cid, (counts.get(cid) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+  }, [base, regionOfCountry]);
+  const countryName = useMemo(
+    () => new Map(catalog.countries.map((c) => [c.id, c.name])),
+    [catalog],
+  );
+
   /** events inside the selected geography (all of `base` for "All markets") */
   const inScope = useMemo(
     () =>
@@ -152,7 +167,7 @@ export default function CatalogPanel({
         <div className="panel-head">
           <span className="panel-title">Market Catalog</span>
           <span className="panel-sub">
-            {mapMode === "watch" ? "★ watchlist" : mapMode === "bets" ? "$ bets" : "all events"}
+            {mapMode === "watch" ? "★ watchlist" : mapMode === "bets" ? "$ bets" : `Event Count: ${base.length}`}
           </span>
         </div>
         <div className="cat-side">
@@ -175,6 +190,21 @@ export default function CatalogPanel({
               <span className="bw-side-name">Global / other</span>
               <span className="bw-side-count">{globalCount}</span>
             </button>
+          )}
+          {topCountries.length > 0 && (
+            <>
+              <div className="bw-side-sect">Countries</div>
+              {topCountries.map(([cid, n]) => (
+                <button
+                  key={cid}
+                  className="bw-side-item"
+                  onClick={() => onRegionFilter(`country:${cid}`)}
+                >
+                  <span className="bw-side-name">{countryName.get(cid) ?? cid}</span>
+                  <span className="bw-side-count">{n}</span>
+                </button>
+              ))}
+            </>
           )}
           {!base.length && (
             <div className="empty">
@@ -254,6 +284,8 @@ export default function CatalogPanel({
               key={ev.id}
               className={`catalog-row${selectedId === ev.id ? " selected" : ""}`}
               onClick={() => onSelect(ev.id)}
+              onDoubleClick={() => { window.location.hash = `#/event/${ev.id}`; }}
+              title="Click to select · double-click to open the full event view"
             >
               <button
                 className={`star${watched ? " on" : ""}`}

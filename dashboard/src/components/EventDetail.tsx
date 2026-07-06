@@ -5,6 +5,7 @@ import { betPnl, isOpen, newBetId } from "../lib/bets";
 import { DEFAULT_FEE_BPS, feeRateLabel, polymarketFee } from "../lib/fees";
 import { fetchPriceHistory, type HistoryInterval } from "../lib/api";
 import PriceChart, { type Series } from "./PriceChart";
+import { BetStrip } from "./BetStrip";
 
 // blue-led (V0.153: green everywhere was overwhelming — charts stay blue)
 const LINE_COLORS = ["#4fc3f7", "#ffa726", "#66bb6a", "#ef5350", "#ab47bc", "#26c6da"];
@@ -20,6 +21,8 @@ interface Props {
   /** existing bets — markets you hold positions in show them inline */
   bets?: Bet[];
   showFullViewLink?: boolean;
+  /** proper display name for event.region (the raw id is lowercase) */
+  regionName?: string | null;
 }
 
 type RateMode = "daily" | "total";
@@ -135,7 +138,7 @@ function BetForm({
   );
 }
 
-export default function EventDetail({ event, live, onAddBet, bets, showFullViewLink }: Props) {
+export default function EventDetail({ event, live, onAddBet, bets, showFullViewLink, regionName }: Props) {
   const [mode, setMode] = useState<RateMode>("total"); // total odds are the site default
   const [interval, setInterval_] = useState<HistoryInterval>("1m");
   const [series, setSeries] = useState<Series[] | null>(null);
@@ -194,6 +197,28 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
     return m;
   }, [bets]);
 
+  // V0.154 bug fix: inline chips only exist on RENDERED rows — the ladder keeps
+  // one market per deadline and buckets keep the top 12, so a bet on any other
+  // market of this event silently vanished from the event view (while its
+  // Markets-card strip still showed). Bets on unrendered markets get their own
+  // strip section below instead.
+  const orphanBets = useMemo(() => {
+    const shown = new Set(
+      event.type === "horizon"
+        ? ladder.map((r) => r.market.id)
+        : event.type === "categorical"
+          ? [...event.markets]
+              .sort((a, b) => liveYes(b, live) - liveYes(a, live))
+              .slice(0, 12)
+              .map((m) => m.id)
+          : event.markets.map((m) => m.id),
+    );
+    const own = new Set(event.markets.map((m) => m.id));
+    return (bets ?? []).filter(
+      (b) => isOpen(b) && own.has(b.marketId) && !shown.has(b.marketId),
+    );
+  }, [bets, event, ladder, live]);
+
   /** inline chips for positions already held on a market */
   const posChips = (m: CatalogMarket) =>
     positions.get(m.id)?.map((b) => {
@@ -236,7 +261,7 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
           <div className="detail-title">{event.title}</div>
           <div className="detail-meta">
             {event.category}
-            {event.region && <> · {event.region}</>}
+            {event.region && <> · {regionName ?? event.region}</>}
             {" · "}{fmtVolume(event.volume)} total vol
             {" · "}{fmtVolume(event.volume24h)} 24h
             {!event.id.startsWith("group:") && (
@@ -277,6 +302,21 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
         />
       )}
 
+      {orphanBets.length > 0 && (
+        <div className="detail-positions">
+          {orphanBets.map((b) => (
+            <div key={b.id} className="detail-pos-row">
+              <span className="detail-pos-label">{b.label}</span>
+              <BetStrip
+                bet={b}
+                market={event.markets.find((m) => m.id === b.marketId)}
+                live={live}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {event.type === "horizon" && (
         <>
           <table className="ladder">
@@ -302,27 +342,33 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
                   i === 0 ? "—"
                   : mode === "daily" ? `${r.margDaily.toFixed(3)}%`
                   : `${r.marginal >= 0 ? "+" : ""}${r.marginal.toFixed(1)}%`;
+                // V0.154: ONE peak concept. The badge used to mark the highest
+                // implied daily (cumulative) while the red period-odds text
+                // marked the highest in-window hazard — two maxima that could
+                // land on different rows and read as a bug. Everything now
+                // flags the market-implied window: the highest per-day hazard
+                // BETWEEN deadlines, i.e. when the market thinks it happens.
                 const margPeak = i > 0 && peakMarg > 0 && Math.abs(r.margDaily - peakMarg) < 1e-9;
                 return (
                   <tr key={r.endDate}>
                     <td>{r.label}</td>
                     <td className="num">{r.yes.toFixed(1)}%</td>
-                    <td className={`num${r.isPeak ? " peak" : r.isInversion ? " inv" : ""}`}>{implTxt}</td>
+                    <td className={`num${r.isInversion ? " inv" : ""}`}>{implTxt}</td>
                     <td className={`num${margPeak ? " peak" : r.isCheap ? " cheap" : ""}`}>{margTxt}</td>
                     <td className="num muted">{r.days}d</td>
                     <td className="viz">
                       <div
-                        className={`bar${r.isPeak ? " bar-peak" : r.isInversion ? " bar-inv" : ""}`}
+                        className={`bar${margPeak ? " bar-peak" : r.isInversion ? " bar-inv" : ""}`}
                         style={{ width: `${Math.max(2, barVal * 100)}%` }}
                       />
                     </td>
                     <td className="flags">
-                      {r.isPeak && (
+                      {margPeak && (
                         <span
                           className="badge b-peak"
-                          title="Highest cost of coverage per day — the implied date the market currently believes the event will happen"
+                          title="Market-implied window: of all the spans between deadlines, this one carries the highest per-day odds — the period the market currently believes the event is most likely to happen in. The red period odds mark the same window."
                         >
-                          PEAK
+                          IMPLIED WINDOW
                         </span>
                       )}
                       {r.isCheap && <span className="badge b-cheap">CHEAP</span>}

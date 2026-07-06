@@ -35,6 +35,7 @@ export default function NewsFeed({
               {a.source}
               {a.sourceType === "osint" && <span className="news-type"> · OSINT</span>}
               {a.sourceType === "breaking" && <span className="news-type"> · ⚡ breaking</span>}
+              {a.translated && <span className="news-type" title="Machine-translated to English"> · translated</span>}
               {" · "}{timeAgo(a.publishedAt)} ago
             </div>
           </div>

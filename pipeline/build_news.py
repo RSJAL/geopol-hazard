@@ -82,6 +82,45 @@ SPORT_NOISE = re.compile(
     r"world cup|fifa|premier league|champions league|\bnba\b|olympi"
     r"|كأس العالم|منتخب|مباراة|الدوري|هدف", re.IGNORECASE)
 
+# ── Tweet translation (V0.154) ────────────────────────────────────────────────
+# Arabic/other non-English tweets read as noise in the feed AND score neutral
+# in the English-only sentiment lexicon. Grok's on-platform translation isn't
+# reachable through Nitter RSS, so non-Latin-script tweets go through the free
+# Google Translate web endpoint instead (no key; fail-soft keeps the original).
+# Translating BEFORE region/event matching + sentiment also lets Arabic
+# breaking news match events and score hot/cool like any other headline.
+NON_LATIN = re.compile(
+    "["
+    "Ѐ-ӿ"   # Cyrillic
+    "԰-֏"   # Armenian
+    "֐-׿"   # Hebrew
+    "؀-ۿ"   # Arabic
+    "܀-ݏ"   # Syriac
+    "฀-๿"   # Thai
+    "一-鿿"   # CJK
+    "぀-ヿ"   # Japanese kana
+    "가-힯"   # Hangul
+    "]"
+)
+MAX_TRANSLATIONS = 80  # per run — the endpoint is unofficial, stay polite
+
+
+def translate_to_english(session: requests.Session, text: str) -> tuple[str, bool]:
+    """(english_text, True) on success, (original, False) on any failure."""
+    try:
+        r = session.get(
+            "https://translate.googleapis.com/translate_a/single",
+            params={"client": "gtx", "sl": "auto", "tl": "en", "dt": "t", "q": text},
+            timeout=15,
+        )
+        r.raise_for_status()
+        segs = r.json()[0] or []
+        out = "".join(s[0] for s in segs if s and s[0]).strip()
+        return (out, True) if out else (text, False)
+    except (requests.RequestException, ValueError, IndexError, TypeError, KeyError) as e:
+        print(f"    ! translate failed ({e})")
+        return text, False
+
 # Google News topic searches (rounded out with region tagging keywords below).
 # Google News aggregates Reuters/AP which have no free direct feeds.
 GNEWS_QUERIES = [
@@ -291,6 +330,7 @@ def build_news(catalog_path: Path, max_articles: int) -> dict:
         time.sleep(0.3)
 
     # X accounts via Nitter mirrors — instances rot, so fail soft per account
+    n_translated = 0
     for handle, display, stype, acct_regions in X_ACCOUNTS:
         feed = ""
         for inst in NITTER_INSTANCES:
@@ -304,6 +344,13 @@ def build_news(catalog_path: Path, max_articles: int) -> dict:
                 continue  # replies are noise; retweets ("RT by") are curation
             if SPORT_NOISE.search(it["title"]):
                 continue
+            if NON_LATIN.search(it["title"]) and n_translated < MAX_TRANSLATIONS:
+                translated, ok = translate_to_english(session, it["title"])
+                if ok:
+                    it["title"] = translated
+                    it["translated"] = True
+                    n_translated += 1
+                    time.sleep(0.15)
             it["domain"] = "x.com"
             # rewrite the mirror link to the canonical x.com status URL
             it["link"] = re.sub(r"https?://[^/]+", "https://x.com", it["link"]).split("#")[0]
@@ -348,6 +395,7 @@ def build_news(catalog_path: Path, max_articles: int) -> dict:
             "regions": regions,
             "eventIds": event_ids,
             "sentiment": sentiment(text),
+            **({"translated": True} if it.get("translated") else {}),
         })
 
     articles.sort(key=lambda a: a["publishedAt"] or "", reverse=True)

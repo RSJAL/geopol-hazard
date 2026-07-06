@@ -88,6 +88,8 @@ export interface NewsArticle {
   eventIds: string[];
   /** escalation score in [-1,1]: negative = hot/escalatory, positive = cool */
   sentiment: number;
+  /** title machine-translated to English by the pipeline (V0.154) */
+  translated?: boolean;
 }
 
 export interface NewsData {

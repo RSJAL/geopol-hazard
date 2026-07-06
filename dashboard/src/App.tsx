@@ -97,6 +97,13 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  // remember which page led to an event view so its back button returns there
+  // (deep link straight to an event: default to Markets)
+  const eventFrom = useRef<"map" | "markets" | "portfolio">("markets");
+  useEffect(() => {
+    if (route.page !== "event") eventFrom.current = route.page;
+  }, [route]);
+
   // keep selected event in the URL so map views are deep-linkable
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -117,7 +124,12 @@ export default function App() {
 
   const addBet = useCallback((bet: Bet) => {
     setBets((prev) => {
-      const next = [...prev, bet];
+      // bets recorded on merged group pages arrive without an eventId —
+      // resolve the owning event so they show on the map/dashboard views too
+      const full = bet.eventId
+        ? bet
+        : { ...bet, eventId: marketIndexRef.current.get(bet.marketId)?.event.id ?? "" };
+      const next = [...prev, full];
       if (!DEMO) persistBets(next);
       return next;
     });
@@ -165,6 +177,9 @@ export default function App() {
       for (const m of ev.markets) idx.set(m.id, { market: m, event: ev });
     return idx;
   }, [catalog]);
+  // ref so the stable addBet callback sees the current index without re-creating
+  const marketIndexRef = useRef(marketIndex);
+  marketIndexRef.current = marketIndex;
 
   // ── Live price refresh: watchlist + selection + bet events + open page ─────
   const liveTargets = useMemo(() => {
@@ -367,6 +382,7 @@ export default function App() {
           news={news}
           bets={bets}
           onAddBet={addBet}
+          from={eventFrom.current}
         />
       )}
 
@@ -402,7 +418,18 @@ export default function App() {
               betEventIds={betEventIds}
             />
             {selected ? (
-              <EventDetail event={selected} live={live} onAddBet={addBet} bets={bets} showFullViewLink />
+              <EventDetail
+                event={selected}
+                live={live}
+                onAddBet={addBet}
+                bets={bets}
+                showFullViewLink
+                regionName={
+                  selected.region
+                    ? catalog.regions.find((r) => r.id === selected.region)?.name ?? selected.region
+                    : null
+                }
+              />
             ) : (
               <div className="detail-placeholder">
                 Select an event from the catalog to see its deadline ladder,
