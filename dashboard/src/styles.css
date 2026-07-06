@@ -717,66 +717,6 @@ a:hover { text-decoration: underline; }
 .pf-won { flex: initial; color: var(--cheap); border-color: #66bb6a66; }
 .pf-lost { flex: initial; color: var(--spike); border-color: #ff6b6b66; }
 
-/* ── V0.155: viewport-fit dashboard + compact detail card ────────────────── */
-.btn-fullview {
-  display: inline-block; background: #00c89614; border: 1px solid #00c89666;
-  color: var(--sel); border-radius: 4px; font-size: 0.7rem; font-weight: 700;
-  padding: 1px 8px; line-height: 1.5; white-space: nowrap;
-}
-.btn-fullview:hover {
-  background: var(--sel); border-color: var(--sel); color: var(--head);
-  text-decoration: none;
-}
-
-/* clamped ladder/bucket rows link to the full view, Browse-card style */
-a.bw-more { display: inline-block; color: var(--muted); padding: 2px; }
-a.bw-more:hover { color: var(--sel); text-decoration: none; }
-
-/* compact binary card: stat row sits in the centre of the freed-up width
-   (V0.155.1 — binary-actions' margin-left:auto was eating the free space
-   and pinning everything to the left edge) */
-.detail-compact .binary-row { justify-content: center; gap: 48px; }
-.detail-compact .binary-actions { margin-left: 0; }
-.detail-compact .binary-yes { font-size: 1.9rem; }
-.detail-compact .ladder,
-.detail-compact .binary-summary { margin-bottom: 4px; }
-
-/* Dashboard pinned to the viewport on desktop: fits 1920×1080 with no page
-   scroll; larger monitors scale up (columns and map flex to fill); smaller
-   screens and phones fall back to normal scrolling. */
-@media (min-width: 1400px) and (min-height: 760px) {
-  .app.app-map {
-    height: 100vh; box-sizing: border-box; overflow: hidden;
-    display: flex; flex-direction: column;
-  }
-  .app.app-map .header, .app.app-map .footer { flex-shrink: 0; }
-  .app.app-map .footer { margin-top: 8px; }
-  /* V0.155.1: the grid row must be a definite track (not auto), otherwise a
-     long catalog list sizes the row to its content and shoves the map and
-     detail card below the footer */
-  .app.app-map .layout {
-    flex: 1; min-height: 0; align-items: stretch;
-    grid-template-rows: minmax(0, 1fr);
-  }
-  .app.app-map .watch-panel { max-height: none; }
-  /* catalog hugs its content but never exceeds the column (V0.155.1) */
-  .app.app-map .catalog-panel {
-    align-self: start; max-height: 100%; box-sizing: border-box;
-  }
-  .app.app-map .center-col { min-height: 0; }
-  .app.app-map .map-panel {
-    flex: 1 1 auto; min-height: 0;
-    display: flex; flex-direction: column;
-  }
-  /* svg keeps its aspect ratio and scales to whatever height remains */
-  .app.app-map .world-map { flex: 1; min-height: 0; height: 100%; }
-  .app.app-map .center-col .detail-panel,
-  .app.app-map .center-col .detail-placeholder {
-    flex-shrink: 0; max-height: 48%; overflow-y: auto;
-  }
-  .app.app-map .rail { min-height: 0; overflow-y: auto; }
-}
-
 /* scrollbars */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--head); }

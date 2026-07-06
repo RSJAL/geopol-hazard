@@ -13,7 +13,7 @@ import json
 import re
 import sys
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -299,47 +299,9 @@ def fetch_tag_events(session: requests.Session, tag: str, today: date,
     return out
 
 
-# V0.155: resolved/expired markets linger this many days (so users can log a
-# late bet or see the resolution), then drop out of tracking.
-CLOSED_GRACE_DAYS = 2
-
-_MONTHS = {
-    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
-}
-DEADLINE_RE = re.compile(
-    r"\b(?:by|before|on or before)\s+"
-    r"(january|february|march|april|may|june|july|august|september|october|"
-    r"november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s+"
-    r"(\d{1,2}),?\s+(20\d\d)\b",
-    re.IGNORECASE,
-)
-
-
-def question_deadline(question: str) -> Optional[date]:
-    """Deadline stated in the question text ('… ceasefire by May 31, 2026?')."""
-    m = DEADLINE_RE.search(question or "")
-    if not m:
-        return None
-    try:
-        return date(int(m.group(3)), _MONTHS[m.group(1).lower()[:3]], int(m.group(2)))
-    except (ValueError, KeyError):
-        return None
-
-
 def normalize_market(m: dict, today: date) -> Optional[dict]:
     end = parse_iso_date(m.get("endDateIso") or m.get("endDate"))
-    if not end:
-        return None
-    # Sub-markets of multi-deadline events often carry the EVENT's end date
-    # ("… by May 31, 2026?" with endDate Dec 31) — prefer the question's own
-    # deadline so ladders classify/order correctly and resolved rungs age out.
-    qd = question_deadline(m.get("question", ""))
-    if qd and qd < end:
-        end = qd
-    cutoff = today - timedelta(days=CLOSED_GRACE_DAYS)
-    closed_on = parse_iso_date(str(m.get("closedTime") or "")[:10]) if m.get("closed") else None
-    if end < cutoff or (closed_on and closed_on < cutoff):
+    if not end or end <= today:
         return None
     yes = parse_prices(m.get("outcomePrices"))
     if yes is None:

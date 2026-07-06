@@ -23,13 +23,7 @@ interface Props {
   showFullViewLink?: boolean;
   /** proper display name for event.region (the raw id is lowercase) */
   regionName?: string | null;
-  /** dashboard card mode (V0.155): no price chart, row counts clamped so the
-   *  page fits a 1080p viewport — the Full View button has the rest */
-  compact?: boolean;
 }
-
-/** max ladder/bucket rows on the compact dashboard card */
-const COMPACT_ROWS = 6;
 
 type RateMode = "daily" | "total";
 
@@ -144,7 +138,7 @@ function BetForm({
   );
 }
 
-export default function EventDetail({ event, live, onAddBet, bets, showFullViewLink, regionName, compact }: Props) {
+export default function EventDetail({ event, live, onAddBet, bets, showFullViewLink, regionName }: Props) {
   const [mode, setMode] = useState<RateMode>("total"); // total odds are the site default
   const [interval, setInterval_] = useState<HistoryInterval>("1m");
   const [series, setSeries] = useState<Series[] | null>(null);
@@ -172,7 +166,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
   // identity) and must NOT refetch histories / flash the chart
   const chartKey = chartMarkets.map((m) => m.id).join(",");
   useEffect(() => {
-    if (compact) return; // dashboard card has no chart — skip the fetches
     let cancelled = false;
     setSeries(null);
     Promise.all(
@@ -197,22 +190,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
   const maxImpl = Math.max(...ladder.map((r) => r.implDaily), 1e-9);
   const maxYes = Math.max(...ladder.map((r) => r.yes), 1e-9);
 
-  // rows actually rendered — the compact dashboard card clamps both shapes
-  const ladderShown = compact ? ladder.slice(0, COMPACT_ROWS) : ladder;
-  const buckets = useMemo(
-    () =>
-      event.type === "categorical"
-        ? [...event.markets]
-            .sort((a, b) => liveYes(b, live) - liveYes(a, live))
-            .slice(0, compact ? COMPACT_ROWS : 12)
-        : [],
-    [event, live, compact],
-  );
-  const hiddenRows =
-    event.type === "horizon" ? ladder.length - ladderShown.length
-    : event.type === "categorical" ? Math.max(0, event.markets.length - buckets.length)
-    : 0;
-
   const positions = useMemo(() => {
     const m = new Map<string, Bet[]>();
     for (const b of bets ?? [])
@@ -228,16 +205,19 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
   const orphanBets = useMemo(() => {
     const shown = new Set(
       event.type === "horizon"
-        ? ladderShown.map((r) => r.market.id)
+        ? ladder.map((r) => r.market.id)
         : event.type === "categorical"
-          ? buckets.map((m) => m.id)
+          ? [...event.markets]
+              .sort((a, b) => liveYes(b, live) - liveYes(a, live))
+              .slice(0, 12)
+              .map((m) => m.id)
           : event.markets.map((m) => m.id),
     );
     const own = new Set(event.markets.map((m) => m.id));
     return (bets ?? []).filter(
       (b) => isOpen(b) && own.has(b.marketId) && !shown.has(b.marketId),
     );
-  }, [bets, event, ladderShown, buckets]);
+  }, [bets, event, ladder, live]);
 
   /** inline chips for positions already held on a market */
   const posChips = (m: CatalogMarket) =>
@@ -275,7 +255,7 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
         : marketId ?? betOptions[0]?.market.id ?? null);
 
   return (
-    <div className={`detail-panel${compact ? " detail-compact" : ""}`}>
+    <div className="detail-panel">
       <div className="detail-head">
         <div>
           <div className="detail-title">{event.title}</div>
@@ -288,8 +268,14 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
               <>
                 {" · "}
                 <a href={`https://polymarket.com/event/${event.slug}`} target="_blank" rel="noreferrer">
-                  Polymarket ↗
+                  polymarket ↗
                 </a>
+              </>
+            )}
+            {showFullViewLink && (
+              <>
+                {" · "}
+                <a href={`#/event/${event.id}`}>full view + news ↗</a>
               </>
             )}
           </div>
@@ -300,15 +286,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
               <button className={mode === "total" ? "on" : ""} onClick={() => setMode("total")}>Total</button>
               <button className={mode === "daily" ? "on" : ""} onClick={() => setMode("daily")}>Daily</button>
             </div>
-          )}
-          {showFullViewLink && (
-            <a
-              className="btn-fullview"
-              href={`#/event/${event.id}`}
-              title="Open the full event page: price history, all deadlines, and related news"
-            >
-              Full View + News →
-            </a>
           )}
           <button className="bet-btn" onClick={() => toggleBetForm()}>$ Record bet</button>
         </div>
@@ -358,7 +335,7 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
               </tr>
             </thead>
             <tbody>
-              {ladderShown.map((r, i) => {
+              {ladder.map((r, i) => {
                 const barVal = mode === "daily" ? r.implDaily / maxImpl : r.yes / maxYes;
                 const implTxt = mode === "daily" ? `${r.implDaily.toFixed(3)}%` : `${r.yes.toFixed(1)}%`;
                 const margTxt =
@@ -403,16 +380,16 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
               })}
             </tbody>
           </table>
-          {compact && hiddenRows > 0 && (
-            <a className="bw-more" href={`#/event/${event.id}`}>+{hiddenRows} more →</a>
-          )}
         </>
       )}
 
       {event.type === "categorical" && (
         <>
           <div className="buckets">
-            {buckets.map((m) => {
+            {[...event.markets]
+              .sort((a, b) => liveYes(b, live) - liveYes(a, live))
+              .slice(0, 12)
+              .map((m) => {
                 const yes = liveYes(m, live);
                 const label = m.groupItemTitle || m.question;
                 return (
@@ -427,9 +404,6 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
                 );
               })}
           </div>
-          {compact && hiddenRows > 0 && (
-            <a className="bw-more" href={`#/event/${event.id}`}>+{hiddenRows} more →</a>
-          )}
         </>
       )}
 
@@ -470,25 +444,19 @@ export default function EventDetail({ event, live, onAddBet, bets, showFullViewL
         </div>
       )}
 
-      {/* V0.155: the dashboard card drops the chart entirely — it lives on
-          the full event page, one click away via the Full View button */}
-      {!compact && (
-        <>
-          <div className="chart-head">
-            <span className="panel-title">Price history</span>
-            <div className="toggle iv-toggle">
-              {(["1d", "1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
-                <button key={iv} className={interval === iv ? "on" : ""} onClick={() => setInterval_(iv)}>
-                  {INTERVAL_LABEL[iv]}
-                </button>
-              ))}
-            </div>
-          </div>
-          {series === null
-            ? <div className="chart-empty">Loading price history…</div>
-            : <PriceChart series={series} />}
-        </>
-      )}
+      <div className="chart-head">
+        <span className="panel-title">Price history</span>
+        <div className="toggle iv-toggle">
+          {(["1d", "1w", "1m", "max"] as HistoryInterval[]).map((iv) => (
+            <button key={iv} className={interval === iv ? "on" : ""} onClick={() => setInterval_(iv)}>
+              {INTERVAL_LABEL[iv]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {series === null
+        ? <div className="chart-empty">Loading price history…</div>
+        : <PriceChart series={series} />}
     </div>
   );
 }

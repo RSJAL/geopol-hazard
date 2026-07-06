@@ -313,8 +313,7 @@ export default function App() {
   };
 
   return (
-    // app-map pins the dashboard to the viewport on desktop (no page scroll)
-    <div className={`app${route.page === "map" ? " app-map" : ""}`}>
+    <div className="app">
       <header className="header">
         <div>
           <h1 className="title">🌍 GEOPOL HAZARD MONITOR</h1>
@@ -425,7 +424,6 @@ export default function App() {
                 onAddBet={addBet}
                 bets={bets}
                 showFullViewLink
-                compact
                 regionName={
                   selected.region
                     ? catalog.regions.find((r) => r.id === selected.region)?.name ?? selected.region

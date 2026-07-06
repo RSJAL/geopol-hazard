@@ -62,9 +62,7 @@ export function buildLadder(ev: CatalogEvent, live: LivePriceMap): LadderRow[] {
   }
   const markets = [...byEnd.values()]
     .map((m) => ({ m, days: daysFromToday(m.endDate) }))
-    // endDate tiebreak: days clamps at 1, so two just-resolved rungs kept in
-    // the 2-day grace window would otherwise sort arbitrarily
-    .sort((a, b) => a.days - b.days || a.m.endDate.localeCompare(b.m.endDate));
+    .sort((a, b) => a.days - b.days);
 
   const implVals = markets.map(({ m, days }) => impliedDaily(liveYes(m, live), days));
   const peak = Math.max(...implVals);
