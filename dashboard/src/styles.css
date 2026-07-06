@@ -732,8 +732,11 @@ a:hover { text-decoration: underline; }
 a.bw-more { display: inline-block; color: var(--muted); padding: 2px; }
 a.bw-more:hover { color: var(--sel); text-decoration: none; }
 
-/* compact binary card: spread the stat row across the freed-up width */
-.detail-compact .binary-row { justify-content: space-between; }
+/* compact binary card: stat row sits in the centre of the freed-up width
+   (V0.155.1 — binary-actions' margin-left:auto was eating the free space
+   and pinning everything to the left edge) */
+.detail-compact .binary-row { justify-content: center; gap: 48px; }
+.detail-compact .binary-actions { margin-left: 0; }
 .detail-compact .binary-yes { font-size: 1.9rem; }
 .detail-compact .ladder,
 .detail-compact .binary-summary { margin-bottom: 4px; }
@@ -748,9 +751,18 @@ a.bw-more:hover { color: var(--sel); text-decoration: none; }
   }
   .app.app-map .header, .app.app-map .footer { flex-shrink: 0; }
   .app.app-map .footer { margin-top: 8px; }
-  .app.app-map .layout { flex: 1; min-height: 0; align-items: stretch; }
-  .app.app-map .catalog-panel, .app.app-map .watch-panel { max-height: none; }
-  .app.app-map .catalog-panel { height: 100%; box-sizing: border-box; }
+  /* V0.155.1: the grid row must be a definite track (not auto), otherwise a
+     long catalog list sizes the row to its content and shoves the map and
+     detail card below the footer */
+  .app.app-map .layout {
+    flex: 1; min-height: 0; align-items: stretch;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .app.app-map .watch-panel { max-height: none; }
+  /* catalog hugs its content but never exceeds the column (V0.155.1) */
+  .app.app-map .catalog-panel {
+    align-self: start; max-height: 100%; box-sizing: border-box;
+  }
   .app.app-map .center-col { min-height: 0; }
   .app.app-map .map-panel {
     flex: 1 1 auto; min-height: 0;

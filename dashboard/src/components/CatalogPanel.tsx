@@ -160,9 +160,10 @@ export default function CatalogPanel({
       <div className="catalog-panel">
         <div className="panel-head">
           <span className="panel-title">Market Catalog</span>
-          <span className="panel-sub">
-            {mapMode === "watch" ? "★ watchlist" : mapMode === "bets" ? "$ bets" : `Event Count: ${base.length}`}
-          </span>
+          {/* V0.155.1: no event count here — the All markets row already shows it */}
+          {mapMode !== "all" && (
+            <span className="panel-sub">{mapMode === "watch" ? "★ watchlist" : "$ bets"}</span>
+          )}
         </div>
         <div className="cat-side">
           <button className="bw-side-item" onClick={() => setBrowseAll(true)}>
