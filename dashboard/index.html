@@ -23,5 +23,57 @@
     <script data-goatcounter="https://rikuxcv.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"
             onload="window.__gcCount()"></script>
+    <script>
+      // Microsoft Clarity (heatmaps / session replays) — consent-gated for GDPR.
+      // Clarity sets cookies, so it loads ONLY after the visitor opts in via the
+      // banner; the choice persists in localStorage and "No thanks" is never
+      // re-asked. An empty CLARITY_ID disables the banner and Clarity entirely.
+      (function () {
+        var CLARITY_ID = '';
+        var KEY = 'clarityConsent'; // 'granted' | 'denied'
+        if (!CLARITY_ID) return;
+
+        function loadClarity() {
+          (function (c, l, a, r, i, t, y) {
+            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+            t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
+            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+          })(window, document, 'clarity', 'script', CLARITY_ID);
+          window.clarity('consent');
+        }
+
+        var choice = null;
+        try { choice = localStorage.getItem(KEY); } catch (e) {}
+        if (choice === 'granted') { loadClarity(); return; }
+        if (choice === 'denied') return;
+
+        var bar = document.createElement('div');
+        bar.style.cssText =
+          'position:fixed;right:16px;bottom:16px;z-index:1000;max-width:340px;' +
+          'background:#151a24;border:1px solid #252c3c;border-radius:10px;' +
+          'padding:14px 16px;font:13px/1.5 system-ui,sans-serif;color:#c9d1e0;' +
+          'box-shadow:0 8px 24px rgba(0,0,0,.45);';
+        bar.innerHTML =
+          '<div style="font-weight:600;color:#e6ebf5;margin-bottom:6px">Optional analytics</div>' +
+          '<div>May we use Microsoft Clarity (anonymized heatmaps &amp; session replays) to ' +
+          'improve this dashboard? It sets cookies, so it only runs if you accept. ' +
+          'Cookie-free page counts are always collected.</div>' +
+          '<div style="display:flex;gap:8px;margin-top:10px">' +
+          '<button id="cc-yes" style="flex:1;padding:6px 10px;border:none;border-radius:6px;' +
+          'background:#00c896;color:#0b0e14;font-weight:600;cursor:pointer">Accept</button>' +
+          '<button id="cc-no" style="flex:1;padding:6px 10px;border-radius:6px;cursor:pointer;' +
+          'background:transparent;color:#c9d1e0;border:1px solid #3a4257">No thanks</button>' +
+          '</div>';
+        document.body.appendChild(bar);
+
+        function settle(granted) {
+          try { localStorage.setItem(KEY, granted ? 'granted' : 'denied'); } catch (e) {}
+          bar.remove();
+          if (granted) loadClarity();
+        }
+        document.getElementById('cc-yes').onclick = function () { settle(true); };
+        document.getElementById('cc-no').onclick = function () { settle(false); };
+      })();
+    </script>
   </body>
 </html>
