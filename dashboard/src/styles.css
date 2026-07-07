@@ -149,6 +149,7 @@ a:hover { text-decoration: underline; }
 .row-meta { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
 .row-price { text-align: right; flex-shrink: 0; }
 .row-yes { font-size: 0.85rem; font-weight: 700; }
+.row-yes.row-mkts { font-size: 0.72rem; color: var(--muted); }
 .row-chg { font-size: 0.63rem; }
 .up { color: var(--cheap); }
 .down { color: var(--spike); }

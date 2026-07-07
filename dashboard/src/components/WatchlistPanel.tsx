@@ -66,11 +66,18 @@ export default function WatchlistPanel({
                 <div className="row-meta">{ev.category}{lp ? " · live" : ""}</div>
               </div>
               <div className="row-price">
-                <div className="row-yes">{yes.toFixed(1)}%</div>
-                {chg !== 0 && (
-                  <div className={`row-chg ${chg > 0 ? "up" : "down"}`}>
-                    {chg > 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(1)}
-                  </div>
+                {ev.type === "categorical" ? (
+                  // one-of-N selection events have no single headline probability
+                  <div className="row-yes row-mkts">{ev.markets.length} Mkts</div>
+                ) : (
+                  <>
+                    <div className="row-yes">{yes.toFixed(1)}%</div>
+                    {chg !== 0 && (
+                      <div className={`row-chg ${chg > 0 ? "up" : "down"}`}>
+                        {chg > 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(1)}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <button
