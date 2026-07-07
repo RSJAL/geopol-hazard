@@ -10,5 +10,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // GoatCounter: count each hash route as its own pageview (SPA mode).
+      // count.js ignores localhost by default, so dev/preview runs don't pollute stats.
+      window.goatcounter = { no_onload: true };
+      window.__gcCount = function () {
+        if (window.goatcounter && window.goatcounter.count)
+          window.goatcounter.count({ path: location.pathname + (location.hash || '#/') });
+      };
+      window.addEventListener('hashchange', function () { window.__gcCount(); });
+    </script>
+    <script data-goatcounter="https://rikuxcv.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"
+            onload="window.__gcCount()"></script>
   </body>
 </html>
